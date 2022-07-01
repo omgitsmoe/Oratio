@@ -68,7 +68,6 @@ export const voiceStyles: { [key: string]: string } = {
   unfriendly: 'Expresses a cold and indifferent tone.',
 };
 
-
 const ssmlBase = (contents: string) => {
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
        xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
@@ -149,79 +148,110 @@ export type TTSVoiceSettings = {
   voiceVolume: number;
 };
 
-export async function playTTS(
-  ttsSettings: TTSSettings,
-  voiceSettings: TTSVoiceSettings,
-  ttsPlaying: React.MutableRefObject<boolean>,
-  phrase: string
-) {
-  // TODO should fetch these of a queue or sth. so we get a reliable delay between phrases
-  // (e.g. waiting[] in state and then q it when an audio is already playing and fetch one
-  //  off the end in onAudioEnd with a constant delay)
-  if (ttsPlaying.current) {
-    const TTS_WAIT_WHILE_PLAYING_DELAY_MS = 250;
-    setTimeout(() => {
-      playTTS(ttsSettings, voiceSettings, ttsPlaying, phrase);
-    }, TTS_WAIT_WHILE_PLAYING_DELAY_MS);
-    return;
+export class AzureTTS {
+  settings: TTSSettings;
+
+  #currentlyPlaying: boolean;
+
+  #queue: string[];
+
+  // need to take the time into account that azure needs to process the request
+  static readonly PAUSE_BETWEEN_PHRASES_MS = 100;
+
+  constructor(ttsSettings: TTSSettings) {
+    this.settings = ttsSettings;
+    this.#currentlyPlaying = false;
+    this.#queue = [];
   }
 
-  // TODO process phrase into words/emotes etc. before sending it to the browser source server
-  let finalPhrase = phrase;
-  if (ttsSettings.skipEmotes) {
-    const words = phrase.split(' ');
-    finalPhrase = words
-      .filter((word) => {
-        return !(word in emoteNameToUrl);
-      })
-      .join(' ');
+  private playOne() {
+    const ssml = this.#queue.shift();
+    if (ssml) {
+      this.#currentlyPlaying = true;
+      this.playPhrase(ssml);
+    }
   }
-  // TODO check we have all neccessary settings
-  const speechConfig = SpeechConfig.fromSubscription(
-    ttsSettings.apiKey,
-    ttsSettings.region
-  );
 
-  const player = new SpeakerAudioDestination();
-  // setting the volume is broken
-  // player.volume = 0;
-  player.onAudioEnd = () => {
-    ttsPlaying.current = false;
-  };
-  const audioConfig = AudioConfig.fromSpeakerOutput(player);
+  async queuePhrase(phrase: string, voiceSettings: TTSVoiceSettings) {
+    // TODO process phrase into words/emotes etc. before sending it to the browser source server
+    let finalPhrase = phrase;
+    if (this.settings.skipEmotes) {
+      const words = phrase.split(' ');
+      finalPhrase = words
+        .filter((word) => {
+          return !(word in emoteNameToUrl);
+        })
+        .join(' ')
+        .trim();
+    }
 
-  const ssml = ssmlBase(
-    ssmlVoice(
-      voiceSettings.voiceName,
-      ssmlStyle(
-        voiceSettings.voiceStyle,
-        ssmlProsody(
-          voiceSettings.voicePitch,
-          voiceSettings.voiceRate,
-          voiceSettings.voiceVolume,
-          xmlEscape(replaceEmojiCodes(finalPhrase))
+    // skipping emotes might have reduced the phrase to length 0
+    if (finalPhrase.length === 0) {
+      return;
+    }
+
+    const ssml = ssmlBase(
+      ssmlVoice(
+        voiceSettings.voiceName,
+        ssmlStyle(
+          voiceSettings.voiceStyle,
+          ssmlProsody(
+            voiceSettings.voicePitch,
+            voiceSettings.voiceRate,
+            voiceSettings.voiceVolume,
+            xmlEscape(replaceEmojiCodes(finalPhrase))
+          )
         )
       )
-    )
-  );
+    );
 
-  const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
-  synthesizer.speakSsmlAsync(
-    ssml,
-    (result) => {
-      if (result) {
-        if (result.errorDetails) {
-          console.error(result.errorDetails);
-        }
-        ttsPlaying.current = true;
-        synthesizer.close();
-        return result.audioData;
+    const wasEmpty = this.#queue.length === 0;
+    this.#queue.push(ssml);
+    // NOTE: when an audio ends it automatically tries to play the next one
+    // so we only need to manually play one here if the queue is empty
+    // and we're not playing audios currently
+    if (wasEmpty && !this.#currentlyPlaying) this.playOne();
+  }
+
+  private async playPhrase(ssml: string) {
+    // TODO check we have all neccessary settings
+    const speechConfig = SpeechConfig.fromSubscription(
+      this.settings.apiKey,
+      this.settings.region
+    );
+
+    const player = new SpeakerAudioDestination();
+    player.onAudioEnd = () => {
+      if (this.#queue.length > 0) {
+        // NOTE: keep currentlyPlaying active so we can't play another phrase during the pause
+        // play next after a pause
+        setTimeout(() => {
+          this.playOne();
+        }, AzureTTS.PAUSE_BETWEEN_PHRASES_MS);
+      } else {
+        this.#currentlyPlaying = false;
       }
-      return undefined;
-    },
-    (error) => {
-      console.log(error);
-      synthesizer.close();
-    }
-  );
+    };
+
+    const audioConfig = AudioConfig.fromSpeakerOutput(player);
+
+    const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
+    synthesizer.speakSsmlAsync(
+      ssml,
+      (result) => {
+        if (result) {
+          if (result.errorDetails) {
+            console.error(result.errorDetails);
+          }
+          synthesizer.close();
+          return result.audioData;
+        }
+        return undefined;
+      },
+      (error) => {
+        console.log(error);
+        synthesizer.close();
+      }
+    );
+  }
 }

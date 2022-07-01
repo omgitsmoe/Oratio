@@ -34,7 +34,7 @@ import { lowercaseToEmoteName, emoteNameToUrl } from './Emotes';
 import VolumeSlider from './settings/VolumeSlider';
 import ChatStatus from './ChatStatus';
 import ChatInteraction from '../TwitchChat';
-import { TTSSettings, playTTS, voiceStyles } from '../TTSAzure';
+import { TTSSettings, AzureTTS, voiceStyles } from '../TTSAzure';
 import VoiceConfigBar, { VoiceConfig } from './VoiceConfigBar';
 
 const theme = Theme.default();
@@ -163,6 +163,7 @@ export default function Home() {
     region: localStorage.getItem('azureRegion') || '',
     skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
   });
+  const tts = useRef(new AzureTTS(ttsSettingsPermanent.current));
 
   const [voiceStyle, setVoiceStyle] = React.useState(
     localStorage.getItem(localStorageVoiceStyle) || ''
@@ -247,23 +248,14 @@ export default function Home() {
 
     // play TTS
     if (ttsActive) {
-      playTTS(
-        {
-          apiKey: ttsSettingsPermanent.current.apiKey,
-          region: ttsSettingsPermanent.current.region,
-          skipEmotes: ttsSettingsPermanent.current.skipEmotes,
-        },
-        {
-          voiceLang,
-          voiceName,
-          voiceStyle,
-          voiceVolume,
-          voicePitch,
-          voiceRate,
-        },
-        ttsPlaying,
-        phrase
-      );
+      tts.current.queuePhrase(phrase, {
+        voiceLang,
+        voiceName,
+        voiceStyle,
+        voiceVolume,
+        voicePitch,
+        voiceRate,
+      });
     }
 
     addToHistory(phrase);
