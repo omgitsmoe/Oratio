@@ -190,6 +190,7 @@ export class AzureTTS {
       return;
     }
 
+    const parsedAndEscaped = xmlEscape(replaceEmojiCodes(finalPhrase));
     const ssml = ssmlBase(
       ssmlVoice(
         voiceSettings.voiceName,
@@ -199,7 +200,7 @@ export class AzureTTS {
             voiceSettings.voicePitch,
             voiceSettings.voiceRate,
             voiceSettings.voiceVolume,
-            xmlEscape(replaceEmojiCodes(finalPhrase))
+            parsedAndEscaped
           )
         )
       )
@@ -239,14 +240,20 @@ export class AzureTTS {
     synthesizer.speakSsmlAsync(
       ssml,
       (result) => {
-        if (result) {
-          if (result.errorDetails) {
-            console.error(result.errorDetails);
-          }
-          synthesizer.close();
-          return result.audioData;
+        if (result.errorDetails) {
+          console.error(result.errorDetails);
         }
-        return undefined;
+
+        synthesizer.close();
+
+        // returned ArrayBuffer might be of length 0, which will result in audioEnd event not being fired
+        // since there is no audio being played
+        const { audioData } = result;
+        if (audioData.byteLength === 0) {
+          this.#currentlyPlaying = false;
+        }
+
+        return audioData;
       },
       (error) => {
         console.log(error);
