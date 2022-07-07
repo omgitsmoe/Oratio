@@ -249,7 +249,7 @@ export class AzureTTS {
         // returned ArrayBuffer might be of length 0, which will result in audioEnd event not being fired
         // since there is no audio being played
         const { audioData } = result;
-        if (audioData.byteLength === 0) {
+        if (!audioData || audioData.byteLength === 0) {
           this.#currentlyPlaying = false;
         }
 
