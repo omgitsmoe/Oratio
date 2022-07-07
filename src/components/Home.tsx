@@ -198,7 +198,6 @@ export default function Home() {
     setVoiceRate(value.rate);
   }
 
-  const ttsPlaying = useRef(false);
   const channelName = useRef(localStorage.getItem('channelName'));
   const oAuthToken = useRef(
     ipcRenderer.sendSync('getTwitchToken', channelName.current)
@@ -276,12 +275,6 @@ export default function Home() {
     chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
     chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
     chat.setOnChatEvent(sendSpeech);
-
-    // for devenv
-    // TODO technichally this can cause problems where a phrase is queued up and the user
-    // goes to preferences and back which will result in the queued up phrase being
-    // played before the other can finish
-    ttsPlaying.current = false;
   }, []);
 
   // Tab-complete
