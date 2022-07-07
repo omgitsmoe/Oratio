@@ -198,7 +198,7 @@ async function getVoicesAsync(
   const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
   const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
   const voices = await synthesizer.getVoicesAsync(lang);
-  if (voices !== undefined) {
+  if (voices && voices.voices) {
     ref.current = voices.voices;
   }
 }
@@ -223,16 +223,19 @@ export default function TTSSettings() {
     localStorage.getItem('ttsSkipEmotes') === '1'
   );
 
+  // TODO persist voices in localstorage and only update on user request
   const availableVoices: React.MutableRefObject<VoiceInfo[]> = React.useRef([]);
   useEffect(() => {
     const apiKey = ipcRenderer.sendSync('getAzureKey');
     async function updateState() {
-      await getVoicesAsync(
-        apiKey,
-        azureRegion,
-        azureVoiceLang,
-        availableVoices
-      );
+      if (azureRegion) {
+        await getVoicesAsync(
+          apiKey,
+          azureRegion,
+          azureVoiceLang,
+          availableVoices
+        );
+      }
       // do this here so the re-render happens after getting voices
       setAzureApiKey(apiKey);
     }
@@ -264,14 +267,7 @@ export default function TTSSettings() {
                   } else {
                     setApiKeyErrorMessage('');
                     ipcRenderer.send('setAzureKey', trimmed);
-                    // get voices assuming we didn't have a valid key before, so voices should be empty
-                    // need to await here so the re-render happens after we got new voices
-                    await getVoicesAsync(
-                      trimmed,
-                      azureRegion,
-                      azureVoiceLang,
-                      availableVoices
-                    );
+                    setAzureRegion('');
                   }
                   setAzureApiKey(trimmed);
                 }}
@@ -284,11 +280,22 @@ export default function TTSSettings() {
                 fullWidth
                 label={t('Azure Region')}
                 value={azureRegion}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                   const trimmed = e.target.value.trim();
                   // TODO validation?
                   setAzureRegion(trimmed);
                   localStorage.setItem('azureRegion', trimmed);
+
+                  if (trimmed && azureApiKey) {
+                    // get voices assuming we didn't have a valid key before, so voices should be empty
+                    // need to await here so the re-render happens after we got new voices
+                    await getVoicesAsync(
+                      azureApiKey,
+                      trimmed,
+                      azureVoiceLang,
+                      availableVoices
+                    );
+                  }
                 }}
               />
             </Grid>
