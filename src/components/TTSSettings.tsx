@@ -195,9 +195,10 @@ async function getVoicesAsync(
   ref: React.MutableRefObject<VoiceInfo[]>
 ) {
   const speechConfig = SpeechConfig.fromSubscription(key, region);
-  const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
-  const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
+  const synthesizer = new SpeechSynthesizer(speechConfig);
   const voices = await synthesizer.getVoicesAsync(lang);
+  synthesizer.close();
+
   if (voices && voices.voices) {
     ref.current = voices.voices;
   }
