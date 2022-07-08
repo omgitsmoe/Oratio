@@ -202,11 +202,11 @@ export default function KeybindConfig() {
               id="binding-style-select"
               value={action}
               className={classes.styleSelect}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              onChange={(e) => {
                 changeBindings({
                   type: 'add',
                   keys,
-                  action: e.target.value,
+                  action: e.target.value as string,
                 });
               }}
             >

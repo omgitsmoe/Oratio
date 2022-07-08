@@ -482,10 +482,13 @@ export default function Home() {
                         labelId="azure-voice-style-label"
                         id="azure-voice-style"
                         value={voiceStyle}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                          const value = e.target.value;
-                          setVoiceStyle(value);
-                          localStorage.setItem('ttsVoiceStyle', value);
+                        onChange={(e) => {
+                          const { value } = e.target;
+                          setVoiceStyle(value as string);
+                          localStorage.setItem(
+                            'ttsVoiceStyle',
+                            value as string
+                          );
                         }}
                       >
                         <MUIMenuItem key="none" value="none">

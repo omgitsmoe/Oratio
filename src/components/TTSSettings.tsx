@@ -6,7 +6,13 @@ import {
   MuiThemeProvider,
 } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
-import { Button, Checkbox, FormControlLabel, FormHelperText, Grid } from '@material-ui/core';
+import {
+  Button,
+  Checkbox,
+  FormControlLabel,
+  FormHelperText,
+  Grid,
+} from '@material-ui/core';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
@@ -326,18 +332,16 @@ export default function TTSSettings() {
                   labelId="azure-voice-lang-label"
                   id="azure-voice-lang"
                   value={azureVoiceLang}
-                  onChange={async (
-                    event: React.ChangeEvent<HTMLSelectElement>
-                  ) => {
+                  onChange={async (event) => {
                     // TODO fix event.target.value type errors
                     if (event.target.value !== azureVoiceLang) {
                       setAzureVoiceName('');
                       // TODO validation?
                       localStorage.setItem(
                         'azureVoiceLang',
-                        event.target.value
+                        event.target.value as string
                       );
-                      setAzureVoiceLang(event.target.value);
+                      setAzureVoiceLang(event.target.value as string);
                     }
                   }}
                 >
@@ -363,11 +367,11 @@ export default function TTSSettings() {
                   labelId="azure-voice-name-label"
                   id="azure-voice-name"
                   value={azureVoiceName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={(e) => {
                     const { value } = e.target;
                     // TODO validation?
-                    setAzureVoiceName(value);
-                    localStorage.setItem('azureVoiceName', value);
+                    setAzureVoiceName(value as string);
+                    localStorage.setItem('azureVoiceName', value as string);
                   }}
                 >
                   {availableVoices.map((voiceOption: VoiceOption) => {
