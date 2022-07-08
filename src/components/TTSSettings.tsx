@@ -6,7 +6,7 @@ import {
   MuiThemeProvider,
 } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
-import { Button, Checkbox, FormControlLabel, Grid } from '@material-ui/core';
+import { Button, Checkbox, FormControlLabel, FormHelperText, Grid } from '@material-ui/core';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
@@ -17,8 +17,8 @@ import { useTranslation } from 'react-i18next';
 import {
   SpeechConfig,
   SpeechSynthesizer,
-  AudioConfig,
   VoiceInfo,
+  SynthesisVoicesResult,
 } from 'microsoft-cognitiveservices-speech-sdk';
 import * as Theme from './Theme';
 import KeybindConfig from './settings/KeybindConfig';
@@ -190,19 +190,27 @@ const bcp47ToLanuageName: { [key: string]: string } = {
 
 async function getVoicesAsync(
   key: string,
-  region: string,
-  lang: string,
-  ref: React.MutableRefObject<VoiceInfo[]>
-) {
+  region: string
+): Promise<VoiceInfo[] | undefined> {
+  if (!key || !region) return undefined;
   const speechConfig = SpeechConfig.fromSubscription(key, region);
   const synthesizer = new SpeechSynthesizer(speechConfig);
-  const voices = await synthesizer.getVoicesAsync(lang);
+  let voices: SynthesisVoicesResult | undefined;
+  try {
+    voices = await synthesizer.getVoicesAsync();
+  } catch (e) {
+    console.error('unable to get voices:', e);
+  }
   synthesizer.close();
 
   if (voices && voices.voices) {
-    ref.current = voices.voices;
+    return voices.voices;
   }
+
+  return undefined;
 }
+
+const localStorageVoicesList = 'ttsVoicesList';
 
 export default function TTSSettings() {
   const classes = useStyles();
@@ -225,24 +233,29 @@ export default function TTSSettings() {
   );
 
   // TODO persist voices in localstorage and only update on user request
-  const availableVoices: React.MutableRefObject<VoiceInfo[]> = React.useRef([]);
+  const [availableVoices, setAvailableVoices] = React.useState<VoiceInfo[]>(
+    JSON.parse(localStorage.getItem(localStorageVoicesList) || '[]')
+  );
+  const [azureVoicesListError, setAzureVoicesListError] =
+    React.useState<string>('');
+  async function updateVoices() {
+    let voices: VoiceInfo[] | undefined;
+    if (azureApiKey && azureRegion) {
+      voices = await getVoicesAsync(azureApiKey, azureRegion);
+    }
+    if (voices) {
+      localStorage.setItem(localStorageVoicesList, JSON.stringify(voices));
+      setAvailableVoices(voices);
+      setAzureVoicesListError('');
+    } else {
+      setAzureVoicesListError(t('Missing/invalid API key or region'));
+    }
+  }
   useEffect(() => {
     const apiKey = ipcRenderer.sendSync('getAzureKey');
-    async function updateState() {
-      if (azureRegion) {
-        await getVoicesAsync(
-          apiKey,
-          azureRegion,
-          azureVoiceLang,
-          availableVoices
-        );
-      }
-      // do this here so the re-render happens after getting voices
-      setAzureApiKey(apiKey);
-    }
     // eslint-disable-next-line eqeqeq
     if (apiKey != undefined && apiKey !== '') {
-      updateState();
+      setAzureApiKey(apiKey);
     }
   }, []);
 
@@ -268,7 +281,6 @@ export default function TTSSettings() {
                   } else {
                     setApiKeyErrorMessage('');
                     ipcRenderer.send('setAzureKey', trimmed);
-                    setAzureRegion('');
                   }
                   setAzureApiKey(trimmed);
                 }}
@@ -286,17 +298,6 @@ export default function TTSSettings() {
                   // TODO validation?
                   setAzureRegion(trimmed);
                   localStorage.setItem('azureRegion', trimmed);
-
-                  if (trimmed && azureApiKey) {
-                    // get voices assuming we didn't have a valid key before, so voices should be empty
-                    // need to await here so the re-render happens after we got new voices
-                    await getVoicesAsync(
-                      azureApiKey,
-                      trimmed,
-                      azureVoiceLang,
-                      availableVoices
-                    );
-                  }
                 }}
               />
             </Grid>
@@ -315,12 +316,6 @@ export default function TTSSettings() {
                     // TODO fix event.target.value type errors
                     if (event.target.value !== azureVoiceLang) {
                       setAzureVoiceName('');
-                      await getVoicesAsync(
-                        azureApiKey,
-                        azureRegion,
-                        event.target.value,
-                        availableVoices
-                      );
                       // TODO validation?
                       localStorage.setItem(
                         'azureVoiceLang',
@@ -331,17 +326,20 @@ export default function TTSSettings() {
                   }}
                 >
                   {Object.entries(bcp47ToLanuageName).map(
-                      ([code, name]: [string, string]) => (
+                    ([code, name]: [string, string]) => (
                       <MenuItem key={code} value={code}>
                         {name}
                       </MenuItem>
-                    ))
-                  }
+                    )
+                  )}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={6}>
-              <FormControl className={classes.formControl}>
+              <FormControl
+                className={classes.formControl}
+                error={azureVoicesListError.length > 0}
+              >
                 <InputLabel id="azure-voice-name-label">
                   {t('Azure Voice Name')}
                 </InputLabel>
@@ -350,22 +348,43 @@ export default function TTSSettings() {
                   id="azure-voice-name"
                   value={azureVoiceName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const trimmed = e.target.value.trim();
+                    const { value } = e.target;
                     // TODO validation?
-                    setAzureVoiceName(trimmed);
-                    localStorage.setItem('azureVoiceName', trimmed);
+                    setAzureVoiceName(value);
+                    localStorage.setItem('azureVoiceName', value);
                   }}
                 >
-                  {availableVoices.current.map((voiceInfo: VoiceInfo) => (
-                    <MenuItem
-                      key={voiceInfo.shortName}
-                      value={voiceInfo.shortName}
-                    >
-                      {voiceInfo.localName}
-                    </MenuItem>
-                  ))}
+                  {availableVoices.map((voiceInfo: VoiceInfo) => {
+                    if (voiceInfo.locale === azureVoiceLang) {
+                      return (
+                        <MenuItem
+                          key={voiceInfo.shortName}
+                          value={voiceInfo.shortName}
+                        >
+                          {voiceInfo.localName}
+                        </MenuItem>
+                      );
+                    }
+
+                    return undefined;
+                  })}
                 </Select>
+                {azureVoicesListError && (
+                  <FormHelperText>{azureVoicesListError}</FormHelperText>
+                )}
               </FormControl>
+            </Grid>
+            <Grid item xs={6}>
+              <Button
+                id="update-voices"
+                variant="contained"
+                className={classes.button}
+                color="primary"
+                disabled={!azureApiKey || !azureRegion}
+                onClick={updateVoices}
+              >
+                {t('Update voices')}
+              </Button>
             </Grid>
           </Grid>
           <Grid container direction="row" spacing={3}>
