@@ -210,6 +210,12 @@ async function getVoicesAsync(
   return undefined;
 }
 
+type VoiceOption = {
+  locale: string;
+  localName: string;
+  shortName: string;
+};
+
 const localStorageVoicesList = 'ttsVoicesList';
 
 export default function TTSSettings() {
@@ -233,7 +239,7 @@ export default function TTSSettings() {
   );
 
   // TODO persist voices in localstorage and only update on user request
-  const [availableVoices, setAvailableVoices] = React.useState<VoiceInfo[]>(
+  const [availableVoices, setAvailableVoices] = React.useState<VoiceOption[]>(
     JSON.parse(localStorage.getItem(localStorageVoicesList) || '[]')
   );
   const [azureVoicesListError, setAzureVoicesListError] =
@@ -244,8 +250,18 @@ export default function TTSSettings() {
       voices = await getVoicesAsync(azureApiKey, azureRegion);
     }
     if (voices) {
-      localStorage.setItem(localStorageVoicesList, JSON.stringify(voices));
-      setAvailableVoices(voices);
+      // NOTE: without copying the voice info, stringifying and loading the VoiceInfo[]
+      // using json would not work (e.g. voiceInfo.locale would be undefined)
+      const voiceOptions = voices.map((voiceInfo: VoiceInfo) => ({
+        locale: voiceInfo.locale,
+        localName: voiceInfo.localName,
+        shortName: voiceInfo.shortName,
+      }));
+      localStorage.setItem(
+        localStorageVoicesList,
+        JSON.stringify(voiceOptions)
+      );
+      setAvailableVoices(voiceOptions);
       setAzureVoicesListError('');
     } else {
       setAzureVoicesListError(t('Missing/invalid API key or region'));
@@ -354,14 +370,14 @@ export default function TTSSettings() {
                     localStorage.setItem('azureVoiceName', value);
                   }}
                 >
-                  {availableVoices.map((voiceInfo: VoiceInfo) => {
-                    if (voiceInfo.locale === azureVoiceLang) {
+                  {availableVoices.map((voiceOption: VoiceOption) => {
+                    if (voiceOption.locale === azureVoiceLang) {
                       return (
                         <MenuItem
-                          key={voiceInfo.shortName}
-                          value={voiceInfo.shortName}
+                          key={voiceOption.shortName}
+                          value={voiceOption.shortName}
                         >
-                          {voiceInfo.localName}
+                          {voiceOption.localName}
                         </MenuItem>
                       );
                     }
