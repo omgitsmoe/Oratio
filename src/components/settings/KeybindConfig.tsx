@@ -8,7 +8,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import { useTranslation } from 'react-i18next';
 import hotkeys from 'hotkeys-js';
 import * as Theme from '../Theme';
-import { VoiceConfigMap, storageConfigsName  } from '../VoiceConfigBar';
+import { VoiceConfigMap, storageConfigsName } from '../VoiceConfigBar';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -34,6 +34,8 @@ const useStyles = makeStyles(() =>
   })
 );
 
+const localStorageKeybindings = 'ttsKeybindings';
+
 export default function KeybindConfig() {
   const { t } = useTranslation();
   const classes = useStyles();
@@ -54,7 +56,7 @@ export default function KeybindConfig() {
         console.error('Unknwon action');
     }
 
-    localStorage.setItem('ttsKeybindings', JSON.stringify(result));
+    localStorage.setItem(localStorageKeybindings, JSON.stringify(result));
 
     return result;
   }
@@ -62,13 +64,13 @@ export default function KeybindConfig() {
   const [pressedKeys, setPressedKeys] = useState<string[]>([]);
   const [keyBindings, changeBindings] = useReducer(
     reducer,
-    JSON.parse(localStorage.getItem('ttsKeybindings') || '{}')
+    JSON.parse(localStorage.getItem(localStorageKeybindings) || '{}')
   );
   const [watching, setWatching] = useState<boolean>(false);
   const stopWatching = useRef(() => {});
   const startWatching = useRef(() => {});
 
-  const configNames = useRef<string[]>([]);
+  const [configNames, setConfigNames] = useState<string[]>([]);
 
   useEffect(() => {
     let window = remote.BrowserWindow.getFocusedWindow();
@@ -128,7 +130,7 @@ export default function KeybindConfig() {
     const configs = localStorage.getItem(storageConfigsName);
     if (configs) {
       const configMap: VoiceConfigMap = JSON.parse(configs);
-      configNames.current = Object.keys(configMap);
+      setConfigNames(Object.keys(configMap));
     }
   }, []);
 
@@ -208,7 +210,7 @@ export default function KeybindConfig() {
                 });
               }}
             >
-              {configNames.current.map((name: string) => (
+              {configNames.map((name: string) => (
                 <MenuItem key={name} value={name}>
                   {name}
                 </MenuItem>
