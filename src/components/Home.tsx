@@ -158,12 +158,9 @@ export default function Home() {
   );
 
   // these can't change between renders
-  const ttsSettingsPermanent: React.MutableRefObject<TTSSettings> = useRef({
-    apiKey: ipcRenderer.sendSync('getAzureKey') || '',
-    region: localStorage.getItem('azureRegion') || '',
-    skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
-  });
-  const tts = useRef(new AzureTTS(ttsSettingsPermanent.current));
+  const [ttsHasAuth, setTtsHasAuth] = React.useState(false);
+  // creating AzureTTS in here would re-create it on __every__ render
+  const tts = useRef<AzureTTS | null>(null);
 
   const [voiceStyle, setVoiceStyle] = React.useState(
     localStorage.getItem(localStorageVoiceStyle) || ''
@@ -246,7 +243,7 @@ export default function Home() {
     }
 
     // play TTS
-    if (ttsActive) {
+    if (ttsActive && tts.current !== null) {
       tts.current.queuePhrase(phrase, {
         voiceLang,
         voiceName,
@@ -275,6 +272,26 @@ export default function Home() {
     chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
     chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
     chat.setOnChatEvent(sendSpeech);
+
+    // these can't change between renders
+    const ttsSettings: TTSSettings = {
+      apiKey: ipcRenderer.sendSync('getAzureKey') || '',
+      region: localStorage.getItem('azureRegion') || '',
+      skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
+    };
+
+    let ttsInstance: AzureTTS | undefined;
+    if (ttsSettings.apiKey && ttsSettings.region) {
+      setTtsHasAuth(true);
+      ttsInstance = new AzureTTS(ttsSettings);
+      tts.current = ttsInstance;
+    } else {
+      setTTSActive(false);
+    }
+
+    return () => {
+      if (ttsInstance) ttsInstance.close();
+    };
   }, []);
 
   // Tab-complete
@@ -397,10 +414,7 @@ export default function Home() {
                         ttsActive ? { color: green[500] } : { color: red[500] }
                       }
                       checked={ttsActive}
-                      disabled={
-                        ttsSettingsPermanent.current.apiKey === undefined ||
-                        ttsSettingsPermanent.current.apiKey === ''
-                      }
+                      disabled={!ttsHasAuth}
                       onChange={(event) => {
                         setTTSActive(event.currentTarget.checked);
                         localStorage.setItem(

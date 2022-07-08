@@ -2,7 +2,7 @@ import {
   SpeechConfig,
   SpeechSynthesizer,
   AudioConfig,
-  SpeakerAudioDestination,
+  Connection,
 } from 'microsoft-cognitiveservices-speech-sdk';
 import uEmojiParser from 'universal-emoji-parser';
 import { emoteNameToUrl } from './components/Emotes';
@@ -151,25 +151,54 @@ export type TTSVoiceSettings = {
 export class AzureTTS {
   settings: TTSSettings;
 
-  #currentlyPlaying: boolean;
-
-  #queue: string[];
+  #synthesizer: SpeechSynthesizer | null;
 
   // need to take the time into account that azure needs to process the request
   static readonly PAUSE_BETWEEN_PHRASES_MS = 100;
 
   constructor(ttsSettings: TTSSettings) {
     this.settings = ttsSettings;
-    this.#currentlyPlaying = false;
-    this.#queue = [];
+
+    this.#synthesizer = this.createSynthesizer();
+    this.preConnect();
   }
 
-  private playOne() {
-    const ssml = this.#queue.shift();
-    if (ssml) {
-      this.#currentlyPlaying = true;
-      this.playPhrase(ssml);
+  public preConnect() {
+    if (this.#synthesizer !== null) {
+      const connection = Connection.fromSynthesizer(this.#synthesizer);
+      connection.openConnection();
     }
+  }
+
+  public reInit(ttsSettings: TTSSettings) {
+    this.settings = ttsSettings;
+    this.#synthesizer = this.createSynthesizer();
+    this.preConnect();
+  }
+
+  private createSynthesizer(): SpeechSynthesizer | null {
+    if (!this.settings.apiKey || !this.settings.region) {
+      console.error('AzureTTS: missing api key or region');
+      return null;
+    }
+
+    const speechConfig = SpeechConfig.fromSubscription(
+      this.settings.apiKey,
+      this.settings.region
+    );
+
+    // use the sdk's own queue system for playing the audio, which works
+    // when re-using the same synthesizer instance
+    const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
+
+    // this needs to be null otherwise it will outaplay on default output
+    // TODO this was working (without overlapping speech) with just passing undefined,
+    // so it should also work with passing an AudioConfig
+    return new SpeechSynthesizer(speechConfig, audioConfig);
+  }
+
+  public close() {
+    if (this.#synthesizer) this.#synthesizer.close();
   }
 
   async queuePhrase(phrase: string, voiceSettings: TTSVoiceSettings) {
@@ -206,58 +235,41 @@ export class AzureTTS {
       )
     );
 
-    const wasEmpty = this.#queue.length === 0;
-    this.#queue.push(ssml);
-    // NOTE: when an audio ends it automatically tries to play the next one
-    // so we only need to manually play one here if the queue is empty
-    // and we're not playing audios currently
-    if (wasEmpty && !this.#currentlyPlaying) this.playOne();
+    this.synthesizeAndQueuePhrase(ssml);
   }
 
-  private async playPhrase(ssml: string) {
-    // TODO check we have all neccessary settings
-    const speechConfig = SpeechConfig.fromSubscription(
-      this.settings.apiKey,
-      this.settings.region
-    );
+  private async synthesizeAndQueuePhrase(ssml: string) {
+    if (!this.#synthesizer) {
+      console.error(
+        'AzureTTS: missing synthesizer - missing or invalid API key or region'
+      );
+      return;
+    }
 
-    const player = new SpeakerAudioDestination();
-    player.onAudioEnd = () => {
-      if (this.#queue.length > 0) {
-        // NOTE: keep currentlyPlaying active so we can't play another phrase during the pause
-        // play next after a pause
-        setTimeout(() => {
-          this.playOne();
-        }, AzureTTS.PAUSE_BETWEEN_PHRASES_MS);
-      } else {
-        this.#currentlyPlaying = false;
-      }
-    };
-
-    const audioConfig = AudioConfig.fromSpeakerOutput(player);
-
-    const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
-    synthesizer.speakSsmlAsync(
+    // NOTE: switched to using SpeechSynthesizer's internal queue for playing the audio
+    // which works now since we're re-using the same synthsizer instance
+    // otherwise we would need an audioQueue and some type of Stream/Player from the
+    // sdk, but the documentation is pretty bad:
+    // quickly tried: BaseAudioPlayer; SpeakerAudioDestination; PullAudioOutputStream;
+    // which didn't work for multiple reasons
+    this.#synthesizer.speakSsmlAsync(
       ssml,
       (result) => {
         if (result.errorDetails) {
           console.error(result.errorDetails);
         }
 
-        synthesizer.close();
-
         // returned ArrayBuffer might be of length 0, which will result in audioEnd event not being fired
         // since there is no audio being played
         const { audioData } = result;
-        if (!audioData || audioData.byteLength === 0) {
-          this.#currentlyPlaying = false;
+        if (audioData && audioData.byteLength !== 0) {
+          return audioData;
         }
 
-        return audioData;
+        return undefined;
       },
       (error) => {
         console.log(error);
-        synthesizer.close();
       }
     );
   }
