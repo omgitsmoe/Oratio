@@ -4,6 +4,7 @@ import {
   AudioConfig,
   Connection,
 } from 'microsoft-cognitiveservices-speech-sdk';
+import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
 import { emoteNameToUrl } from './components/Emotes';
 
@@ -153,11 +154,18 @@ export class AzureTTS {
 
   #synthesizer: SpeechSynthesizer | null;
 
+  #audioQueue: ArrayBuffer[];
+
+  #isPlaying: boolean;
+
   // need to take the time into account that azure needs to process the request
   static readonly PAUSE_BETWEEN_PHRASES_MS = 100;
 
   constructor(ttsSettings: TTSSettings) {
     this.settings = ttsSettings;
+
+    this.#audioQueue = [];
+    this.#isPlaying = false;
 
     this.#synthesizer = this.createSynthesizer();
     this.preConnect();
@@ -187,14 +195,8 @@ export class AzureTTS {
       this.settings.region
     );
 
-    // use the sdk's own queue system for playing the audio, which works
-    // when re-using the same synthesizer instance
-    const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
-
     // this needs to be null otherwise it will outaplay on default output
-    // TODO this was working (without overlapping speech) with just passing undefined,
-    // so it should also work with passing an AudioConfig
-    return new SpeechSynthesizer(speechConfig, audioConfig);
+    return new SpeechSynthesizer(speechConfig, null as unknown as AudioConfig);
   }
 
   public close() {
@@ -238,6 +240,39 @@ export class AzureTTS {
     this.synthesizeAndQueuePhrase(ssml);
   }
 
+  static arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+
+    return btoa(binary);
+  }
+
+  private async playOne() {
+    const audioData = this.#audioQueue.shift();
+    if (audioData) {
+      this.#isPlaying = true;
+      // TODO can the default audio format (mp3) change without changing the sdk version?
+      const sound = new Howl({
+        src: `data:audio/mpeg;base64,${AzureTTS.arrayBufferToBase64(
+          audioData
+        )}`,
+        autoplay: true,
+        onend: () => {
+          // keep isPlaying on a delay
+          setTimeout(() => {
+            this.playOne();
+          }, AzureTTS.PAUSE_BETWEEN_PHRASES_MS);
+        },
+      });
+    } else {
+      this.#isPlaying = false;
+    }
+  }
+
   private async synthesizeAndQueuePhrase(ssml: string) {
     if (!this.#synthesizer) {
       console.error(
@@ -246,12 +281,6 @@ export class AzureTTS {
       return;
     }
 
-    // NOTE: switched to using SpeechSynthesizer's internal queue for playing the audio
-    // which works now since we're re-using the same synthsizer instance
-    // otherwise we would need an audioQueue and some type of Stream/Player from the
-    // sdk, but the documentation is pretty bad:
-    // quickly tried: BaseAudioPlayer; SpeakerAudioDestination; PullAudioOutputStream;
-    // which didn't work for multiple reasons
     this.#synthesizer.speakSsmlAsync(
       ssml,
       (result) => {
@@ -263,13 +292,15 @@ export class AzureTTS {
         // since there is no audio being played
         const { audioData } = result;
         if (audioData && audioData.byteLength !== 0) {
+          this.#audioQueue.push(audioData);
+          if (!this.#isPlaying) this.playOne();
           return audioData;
         }
 
         return undefined;
       },
       (error) => {
-        console.log(error);
+        console.error(error);
       }
     );
   }
