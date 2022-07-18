@@ -21,6 +21,7 @@ import VolumeSlider from './settings/VolumeSlider';
 import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider';
 import LanguageSelector from './settings/LanguageSelector';
 import ChatSettings from './settings/ChatSettings';
+import pckgInfo from '../package.json';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -178,6 +179,10 @@ export default function Preferences() {
               <Grid item xs={6}>
                 <BubbleBackgroundColorPicker />
               </Grid>
+            </Grid>
+            <Grid item xs={12} style={{ marginTop: '1em' }}>
+              <h2>{t('About Oratio')}</h2>
+              Version: {pckgInfo.version}
             </Grid>
             <Grid
               container
