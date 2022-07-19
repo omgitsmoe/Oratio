@@ -196,9 +196,11 @@ export default function Home() {
   }
 
   const channelName = useRef(localStorage.getItem('channelName'));
-  const oAuthToken = useRef(
-    ipcRenderer.sendSync('getTwitchToken', channelName.current)
-  );
+  // useState AND useRef initialState argument is run on EVERY render!!! (it's executed but disregarded)
+  // -> pass a function to use lazy initialization which is only run on the initial render
+  const [oAuthToken] = React.useState(() => {
+    return ipcRenderer.sendSync('getTwitchToken', channelName.current);
+  });
 
   // wrap in a ref so a re-render doesn't delete our history
   const textHistory: React.MutableRefObject<string[]> = useRef([]);
@@ -268,7 +270,7 @@ export default function Home() {
   useEffect(() => {
     // currently this component only really udpates after the user comes back
     // from the preferences page so it's fine to have this here for now
-    chat.updateIdentity(channelName.current, oAuthToken.current);
+    chat.updateIdentity(channelName.current, oAuthToken);
     chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
     chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
     chat.setOnChatEvent(sendSpeech);
@@ -562,7 +564,7 @@ export default function Home() {
             <ChatStatus
               chatInstance={chat}
               channelName={channelName.current}
-              oAuthToken={oAuthToken.current}
+              oAuthToken={oAuthToken}
             />
           )}
           <div>
