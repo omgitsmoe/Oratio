@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import Typography from '@material-ui/core/Typography';
 import {
   MuiThemeProvider,
   makeStyles,
@@ -12,30 +11,19 @@ import {
 import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
-import WavesIcon from '@material-ui/icons/Waves';
-import SpeedIcon from '@material-ui/icons/Speed';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import {
-  FormControl,
-  IconButton,
-  InputLabel,
-  Select,
-  Menu,
-} from '@material-ui/core';
-import MUIMenuItem from '@material-ui/core/MenuItem';
 import { red, green } from '@material-ui/core/colors';
-import { BrowserWindow, remote, ipcRenderer, MenuItem } from 'electron';
+import { BrowserWindow, remote, ipcRenderer } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import * as Theme from './Theme';
-import SliderWithIcon from './settings/SliderWithIcon';
-import { lowercaseToEmoteName, emoteNameToUrl } from './Emotes';
-import VolumeSlider from './settings/VolumeSlider';
+import { lowercaseToEmoteName } from './Emotes';
 import ChatStatus from './ChatStatus';
 import ChatInteraction from '../TwitchChat';
-import { TTSSettings, AzureTTS, voiceStyles } from '../TTSAzure';
-import VoiceConfigBar, { VoiceConfig } from './VoiceConfigBar';
+import { TTSSettings, AzureTTS } from '../TTSAzure';
+import { VoiceConfig } from './VoiceConfigBar';
+import TTSConfig from './TTSConfig';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -453,111 +441,36 @@ export default function Home() {
               </Grid>
             </Grid>
             {ttsActive && (
-              // TODO extract this into its own component
-              <>
-                <Grid container direction="row" spacing={3}>
-                  <Grid item xs={6} container alignItems="center">
-                    <Typography variant="h5" component="h1">
-                      {t('TTS Settings')}
-                    </Typography>
-                  </Grid>
-                  <Grid
-                    item
-                    xs={6}
-                    container
-                    alignItems="center"
-                    justifyContent="flex-end"
-                  >
-                    <VoiceConfigBar
-                      getCurrentSettings={getCurrentSettings}
-                      configLoadCallback={handleConfigLoad}
-                    />
-                  </Grid>
-                </Grid>
-                <Grid container direction="row" spacing={3}>
-                  <Grid item xs={6}>
-                    <FormControl className={classes.formControl}>
-                      <InputLabel id="azure-voice-style-label">
-                        {t('Voice style')}
-                      </InputLabel>
-                      <Select
-                        labelId="azure-voice-style-label"
-                        id="azure-voice-style"
-                        value={voiceStyle}
-                        onChange={(e) => {
-                          const { value } = e.target;
-                          setVoiceStyle(value as string);
-                          localStorage.setItem(
-                            'ttsVoiceStyle',
-                            value as string
-                          );
-                        }}
-                      >
-                        <MUIMenuItem key="none" value="none">
-                          none
-                        </MUIMenuItem>
-                        {Object.entries(voiceStyles).map(
-                          ([name, _description]: [string, string]) => (
-                            <MUIMenuItem key={name} value={name}>
-                              {name}
-                            </MUIMenuItem>
-                          )
-                        )}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <VolumeSlider
-                      value={voiceVolume}
-                      label={t('Volume')}
-                      valueDisplay="auto"
-                      onChange={(event, value) => {
-                        setVoiceVolume(value as number);
-                        localStorage.setItem(
-                          localStorageVoiceVolume,
-                          value.toString()
-                        );
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-                <Grid container direction="row" spacing={3}>
-                  <Grid item xs={6}>
-                    <SliderWithIcon
-                      value={voicePitch}
-                      label={t('Pitch (+/- in %)')}
-                      min={-100}
-                      max={100}
-                      step={1}
-                      onChange={(event, value) => {
-                        setVoicePitch(value as number);
-                        localStorage.setItem(
-                          localStorageVoicePitch,
-                          value.toString()
-                        );
-                      }}
-                      icon={<WavesIcon />}
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <SliderWithIcon
-                      value={voiceRate}
-                      label={t('Rate')}
-                      min={0}
-                      max={3}
-                      step={0.01}
-                      onChange={(event, value) => {
-                        setVoiceRate(value as number);
-                        localStorage.setItem(
-                          localStorageVoiceRate,
-                          value.toString()
-                        );
-                      }}
-                      icon={<SpeedIcon />}
-                    />
-                  </Grid>
-                </Grid>
-              </>
+              <TTSConfig
+                getCurrentSettings={getCurrentSettings}
+                handleConfigLoad={handleConfigLoad}
+                voicePitch={voicePitch}
+                voiceRate={voiceRate}
+                voiceStyle={voiceStyle}
+                voiceVolume={voiceVolume}
+                onVolumeChange={(value: number) => {
+                  setVoiceVolume(value);
+                  localStorage.setItem(
+                    localStorageVoiceVolume,
+                    value.toString()
+                  );
+                }}
+                onStyleChange={(value: string) => {
+                  setVoiceStyle(value);
+                  localStorage.setItem(localStorageVoiceStyle, value);
+                }}
+                onPitchChange={(value: number) => {
+                  setVoicePitch(value);
+                  localStorage.setItem(
+                    localStorageVoicePitch,
+                    value.toString()
+                  );
+                }}
+                onRateChange={(value: number) => {
+                  setVoiceRate(value);
+                  localStorage.setItem(localStorageVoiceRate, value.toString());
+                }}
+              />
             )}
           </form>
           {(chat.mirrorFromChat || chat.mirrorToChat) && (

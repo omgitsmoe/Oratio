@@ -14,6 +14,10 @@ export type SliderWithIconProps = {
     event: React.ChangeEvent<unknown>,
     value: number | number[]
   ) => void;
+  onChangeCommitted?: (
+    event: React.ChangeEvent<unknown>,
+    value: number | number[]
+  ) => void;
   icon?: React.ReactElement<SvgIconProps> | undefined;
 };
 export default function SliderWithIcon({
@@ -25,6 +29,7 @@ export default function SliderWithIcon({
   displayValue = 'auto',
   label,
   onChange = undefined,
+  onChangeCommitted = undefined,
   icon = undefined,
 }: SliderWithIconProps) {
   return (
@@ -38,6 +43,7 @@ export default function SliderWithIcon({
           <Slider
             value={value}
             onChange={onChange}
+            onChangeCommitted={onChangeCommitted}
             aria-labelledby="continuous-slider"
             valueLabelDisplay={displayValue}
             step={step}

@@ -11,6 +11,10 @@ export type VolumeSliderProps = {
     event: React.ChangeEvent<unknown>,
     newValue: number | number[]
   ) => void;
+  onChangeCommitted?: (
+    event: React.ChangeEvent<unknown>,
+    value: number | number[]
+  ) => void;
 };
 
 export default function VolumeSlider({
@@ -18,6 +22,7 @@ export default function VolumeSlider({
   label,
   valueDisplay,
   onChange = undefined,
+  onChangeCommitted = undefined,
 }: VolumeSliderProps) {
   return (
     <div>
@@ -32,6 +37,7 @@ export default function VolumeSlider({
           <Slider
             value={value}
             onChange={onChange}
+            onChangeCommitted={onChangeCommitted}
             aria-labelledby="continuous-slider"
             valueLabelDisplay={valueDisplay}
           />
