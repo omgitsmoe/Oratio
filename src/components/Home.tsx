@@ -193,9 +193,13 @@ export default function Home() {
 
   function handleConfigLoad(name: string, value: VoiceConfig) {
     setVoiceStyle(value.style);
+    localStorage.setItem(localStorageVoiceStyle, value.style);
     setVoiceVolume(value.volume);
+    localStorage.setItem(localStorageVoiceVolume, value.volume.toString());
     setVoicePitch(value.pitch);
+    localStorage.setItem(localStorageVoicePitch, value.pitch.toString());
     setVoiceRate(value.rate);
+    localStorage.setItem(localStorageVoiceRate, value.rate.toString());
   }
 
   const channelName = useRef(localStorage.getItem('channelName'));
@@ -207,66 +211,89 @@ export default function Home() {
 
   // wrap in a ref so a re-render doesn't delete our history
   const textHistory: React.MutableRefObject<string[]> = useRef([]);
-  let textHistoryPos: number = textHistory.current.length;
+  const textHistoryPos: React.MutableRefObject<number> = useRef(
+    textHistory.current.length
+  );
 
-  const addToHistory = (text: string) => {
-    const curTextHistory = textHistory.current;
-    if (curTextHistory[curTextHistory.length - 1] !== text) {
-      curTextHistory.push(text);
-      if (curTextHistory.length >= 100) {
-        curTextHistory.shift();
+  const sendSpeech: React.MutableRefObject<
+    ((phrase: string, from_chat: boolean) => void) | null
+  > = useRef(null);
+  // need to creat this function inside a useEffect with the correct dependency array,
+  // otherwise the closure will use outdated values like voiceVolume etc.
+  useEffect(() => {
+    const addToHistory = (text: string) => {
+      const curTextHistory = textHistory.current;
+      if (curTextHistory[curTextHistory.length - 1] !== text) {
+        curTextHistory.push(text);
+        if (curTextHistory.length >= 100) {
+          curTextHistory.shift();
+        }
+        textHistoryPos.current = curTextHistory.length;
       }
-      textHistoryPos = curTextHistory.length;
-    }
-  };
+    };
 
-  const sendSpeech = async (phrase: string, from_chat: boolean) => {
-    if (phrase.trim() === '') return;
-    socket.emit('phraseSend', {
-      phrase,
-      settings: {
-        speed: parseInt(localStorage.getItem('textSpeed') || '75', 10),
-        fontSize: parseInt(localStorage.getItem('fontSize') || '48', 10),
-        fontColor: localStorage.getItem('fontColor') || '#ffffff',
-        fontWeight: parseInt(localStorage.getItem('fontWeight') || '400', 10),
-        soundFileName: localStorage.getItem('soundFileName'),
-        volume: textSoundMuted
-          ? 0
-          : parseFloat(localStorage.getItem('volume') || '50') / 100,
-        bubbleColor: localStorage.getItem('bubbleColor') || '#000',
-        emoteNameToUrl: JSON.parse(
-          localStorage.getItem('emoteNameToUrl') || ''
-        ),
-      },
-    });
-    // post the same message in twitch chat
-    if (!from_chat && chat.mirrorToChat) {
-      chat.sendToChat(phrase);
-    }
-    if (win !== undefined) {
-      win.webContents.send('speech', phrase);
-    }
-
-    // play TTS
-    if (ttsActive && tts.current !== null) {
-      tts.current.queuePhrase(phrase, {
-        voiceLang,
-        voiceName,
-        voiceStyle,
-        voiceVolume,
-        voicePitch,
-        voiceRate,
+    sendSpeech.current = async (phrase: string, from_chat: boolean) => {
+      if (phrase.trim() === '') return;
+      socket.emit('phraseSend', {
+        phrase,
+        settings: {
+          speed: parseInt(localStorage.getItem('textSpeed') || '75', 10),
+          fontSize: parseInt(localStorage.getItem('fontSize') || '48', 10),
+          fontColor: localStorage.getItem('fontColor') || '#ffffff',
+          fontWeight: parseInt(localStorage.getItem('fontWeight') || '400', 10),
+          soundFileName: localStorage.getItem('soundFileName'),
+          volume: textSoundMuted
+            ? 0
+            : parseFloat(localStorage.getItem('volume') || '50') / 100,
+          bubbleColor: localStorage.getItem('bubbleColor') || '#000',
+          emoteNameToUrl: JSON.parse(
+            localStorage.getItem('emoteNameToUrl') || ''
+          ),
+        },
       });
-    }
+      // post the same message in twitch chat
+      if (!from_chat && chat.mirrorToChat) {
+        chat.sendToChat(phrase);
+      }
+      if (win !== undefined) {
+        win.webContents.send('speech', phrase);
+      }
 
-    addToHistory(phrase);
-  };
+      // play TTS
+      if (ttsActive && tts.current !== null) {
+        tts.current.queuePhrase(phrase, {
+          voiceLang,
+          voiceName,
+          voiceStyle,
+          voiceVolume,
+          voicePitch,
+          voiceRate,
+        });
+      }
+
+      addToHistory(phrase);
+    };
+
+    // update chat interaction handler, otherwise it will use an outdated version
+    chat.setOnChatEvent(sendSpeech.current);
+  }, [
+    ttsActive,
+    voiceStyle,
+    voiceVolume,
+    voicePitch,
+    voiceRate,
+    textSoundMuted,
+    socket,
+    voiceLang,
+    voiceName,
+  ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSpeechSendClicked = async (event: any) => {
     event.preventDefault();
     const { speech } = event.currentTarget.elements;
-    await sendSpeech(speech.value, false);
+    if (sendSpeech.current !== null)
+      await sendSpeech.current(speech.value, false);
     speech.value = '';
   };
 
@@ -276,7 +303,6 @@ export default function Home() {
     chat.updateIdentity(channelName.current, oAuthToken);
     chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
     chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
-    chat.setOnChatEvent(sendSpeech);
 
     // these can't change between renders
     const ttsSettings: TTSSettings = {
@@ -366,19 +392,19 @@ export default function Home() {
 
     if (event.key === 'ArrowUp') {
       event.preventDefault(); // do not go to the next element.
-      if (textHistoryPos > 0) {
-        textHistoryPos -= 1;
+      if (textHistoryPos.current > 0) {
+        textHistoryPos.current -= 1;
       }
-      event.target.value = textHistory.current[textHistoryPos] || '';
+      event.target.value = textHistory.current[textHistoryPos.current] || '';
     }
 
     if (event.key === 'ArrowDown') {
       event.preventDefault(); // do not go to the next element.
 
-      if (textHistoryPos <= textHistory.current.length - 1) {
-        textHistoryPos += 1;
+      if (textHistoryPos.current <= textHistory.current.length - 1) {
+        textHistoryPos.current += 1;
       }
-      event.target.value = textHistory.current[textHistoryPos] || '';
+      event.target.value = textHistory.current[textHistoryPos.current] || '';
     }
   }
 
