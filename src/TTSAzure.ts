@@ -71,8 +71,8 @@ export const voiceStyles: { [key: string]: string } = {
 
 const ssmlBase = (contents: string) => {
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
-       xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
-    ${contents}
+xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
+${contents}
 </speak>`;
 };
 
@@ -80,6 +80,11 @@ const ssmlVoice = (voiceName: string, contents: string) => {
   return `<voice name="${voiceName}">${contents}</voice>`;
 };
 
+// NOTE: !IMPORTANT! Azure's billing metric is based on synthesized characters and
+// while the <speak> and <voice> tags are not counted towards that metric
+// any special funcionality like styles or prosody will have their ssml chars
+// counted towards the billing metric!!
+// -> don't include attribute if it's a default
 const ssmlStyle = (styleName: string, phrase: string) => {
   // no style -> just insert the phrase without any markup
   if (styleName === 'none') {
@@ -89,13 +94,28 @@ const ssmlStyle = (styleName: string, phrase: string) => {
   return `<mstts:express-as style="${styleName}">${phrase}</mstts:express-as>`;
 };
 
+const defaultPitch = 0;
+const defaultRate = 1;
+const defaultVolume = 100;
 const ssmlProsody = (
   pitch: number,
   rate: number,
   volume: number,
   contents: string
 ) => {
-  return `<prosody pitch="${pitch}%" rate="${rate}" volume="${volume}">${contents}</prosody>`;
+  // all defaults -> no prosody tag required
+  if (
+    pitch === defaultPitch &&
+    rate === defaultRate &&
+    volume === defaultVolume
+  ) {
+    return contents;
+  }
+
+  const pitchAttr = pitch !== defaultPitch ? ` pitch="${pitch}%"` : '';
+  const rateAttr = rate !== defaultRate ? ` rate="${rate}"` : '';
+  const volumeAttr = rate !== defaultVolume ? ` volume="${volume}"` : '';
+  return `<prosody${pitchAttr}${rateAttr}${volumeAttr}>${contents}</prosody>`;
 };
 
 type EmojiObject = {
