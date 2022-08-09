@@ -150,6 +150,21 @@ export default function Home() {
   // creating AzureTTS in here would re-create it on __every__ render
   const tts = useRef<AzureTTS | null>(null);
 
+  function handleTTSToggle(
+    _event: React.ChangeEvent<HTMLInputElement>,
+    value: boolean
+  ) {
+    if (value === true && tts.current) {
+      // tts was deactivated before
+      tts.current.open();
+    } else if (value === false && tts.current) {
+      tts.current.close();
+    }
+
+    setTTSActive(value);
+    localStorage.setItem('ttsActive', value ? '1' : '0');
+  }
+
   const [voiceStyle, setVoiceStyle] = React.useState(
     localStorage.getItem(localStorageVoiceStyle) || ''
   );
@@ -270,17 +285,19 @@ export default function Home() {
       skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
     };
 
-    let ttsInstance: AzureTTS | undefined;
     if (ttsSettings.apiKey && ttsSettings.region) {
       setTtsHasAuth(true);
-      ttsInstance = new AzureTTS(ttsSettings);
-      tts.current = ttsInstance;
+      tts.current = new AzureTTS(ttsSettings);
+
+      if (ttsActive) {
+        tts.current.open();
+      }
     } else {
       setTTSActive(false);
     }
 
     return () => {
-      if (ttsInstance) ttsInstance.close();
+      if (tts.current) tts.current.close();
     };
   }, []);
 
@@ -405,13 +422,7 @@ export default function Home() {
                       }
                       checked={ttsActive}
                       disabled={!ttsHasAuth}
-                      onChange={(event) => {
-                        setTTSActive(event.currentTarget.checked);
-                        localStorage.setItem(
-                          'ttsActive',
-                          event.currentTarget.checked ? '1' : '0'
-                        );
-                      }}
+                      onChange={handleTTSToggle}
                     />
                   }
                   label={t('TTS active')}

@@ -178,6 +178,8 @@ export class AzureTTS {
 
   #isPlaying: boolean;
 
+  isOpen: boolean;
+
   // need to take the time into account that azure needs to process the request
   static readonly PAUSE_BETWEEN_PHRASES_MS = 100;
 
@@ -187,19 +189,22 @@ export class AzureTTS {
     this.#audioQueue = [];
     this.#isPlaying = false;
 
-    this.#synthesizer = this.createSynthesizer();
-    this.preConnect();
+    this.#synthesizer = null;
+    this.isOpen = false;
   }
 
-  public preConnect() {
+  private preConnect() {
     if (this.#synthesizer !== null) {
       const connection = Connection.fromSynthesizer(this.#synthesizer);
       connection.openConnection();
+      this.isOpen = true;
     }
   }
 
-  public reInit(ttsSettings: TTSSettings) {
-    this.settings = ttsSettings;
+  public open(ttsSettings?: TTSSettings | undefined) {
+    if (ttsSettings !== undefined) {
+      this.settings = ttsSettings;
+    }
     this.#synthesizer = this.createSynthesizer();
     this.preConnect();
   }
@@ -220,7 +225,12 @@ export class AzureTTS {
   }
 
   public close() {
-    if (this.#synthesizer) this.#synthesizer.close();
+    if (this.#synthesizer) {
+      this.#synthesizer.close();
+      this.#synthesizer = null;
+    }
+
+    this.isOpen = false;
   }
 
   async queuePhrase(phrase: string, voiceSettings: TTSVoiceSettings) {
