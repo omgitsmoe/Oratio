@@ -9,6 +9,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import { red, green } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
 import hotkeys from 'hotkeys-js';
+import { RotateLeft } from '@material-ui/icons';
 
 const useStyles = makeStyles((theme) => ({
   saveName: {
@@ -121,6 +122,14 @@ export default function VoiceConfigBar(props: {
 
   return (
     <>
+      <IconButton
+        onClick={() => {
+          props.configLoadCallback('default', defaultConfig);
+        }}
+        aria-label="reset"
+      >
+        <RotateLeft />
+      </IconButton>
       <IconButton
         aria-controls="simple-menu"
         aria-haspopup="true"
