@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   FormControl,
   InputLabel,
@@ -67,6 +67,13 @@ export default function TTSConfig(props: {
   const [tempVoiceVolume, setTempVoiceVolume] = React.useState(voiceVolume);
   const [tempVoicePitch, setTempVoicePitch] = React.useState(voicePitch);
   const [tempVoiceRate, setTempVoiceRate] = React.useState(voiceRate);
+
+  // useState's initial value is only initialized once even if the props update after
+  useEffect(() => {
+    setTempVoiceVolume(voiceVolume);
+    setTempVoicePitch(voicePitch);
+    setTempVoiceRate(voiceRate);
+  }, [voiceVolume, voicePitch, voiceRate]);
 
   return (
     <>
