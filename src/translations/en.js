@@ -50,4 +50,9 @@ that channel:`,
   'to chat': 'to chat',
   'Missing channel name': 'Missing channel name',
   'Missing or invalid authorization': 'Missing or invalid OAuth token',
+  'tts-usage-warning':
+    'Non-default (style: none, volume: 100, pitch: 0, rate: 1) voice settings will incur ' +
+    'additional costs, since the number of characters to set these options will be ' +
+    'considered as billable characters by Azure speech. So use the least amount of non-default' +
+    'values possible!',
 };

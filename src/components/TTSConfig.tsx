@@ -5,12 +5,15 @@ import {
   Select,
   Grid,
   Typography,
+  Tooltip,
 } from '@material-ui/core';
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import MUIMenuItem from '@material-ui/core/MenuItem';
 import WavesIcon from '@material-ui/icons/Waves';
 import SpeedIcon from '@material-ui/icons/Speed';
 import { useTranslation } from 'react-i18next';
+import { Warning } from '@material-ui/icons';
+import { red } from '@material-ui/core/colors';
 import * as Theme from './Theme';
 import SliderWithIcon from './settings/SliderWithIcon';
 import VolumeSlider from './settings/VolumeSlider';
@@ -23,6 +26,10 @@ const useStyles = makeStyles(() =>
     formControl: {
       margin: theme.spacing(0),
       minWidth: '100%',
+    },
+    warning: {
+      marginLeft: '.25em',
+      color: red[300],
     },
   })
 );
@@ -82,6 +89,18 @@ export default function TTSConfig(props: {
           <Typography variant="h5" component="h1">
             {t('TTS Settings')}
           </Typography>
+          <Tooltip
+            title={
+              <>
+                <Typography variant="body2">
+                  {t('tts-usage-warning')}
+                </Typography>
+              </>
+            }
+            className={classes.warning}
+          >
+            <Warning />
+          </Tooltip>
         </Grid>
         <Grid
           item
