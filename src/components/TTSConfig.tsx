@@ -32,7 +32,6 @@ const useStyles = makeStyles(() =>
     },
     warning: {
       marginLeft: '.25em',
-      color: red[300],
     },
   })
 );
@@ -81,6 +80,9 @@ export default function TTSConfig(props: {
     setTempVoiceRate(voiceRate);
   }, [voicePitch, voiceRate]);
 
+  const nonDefaultVoice =
+    voicePitch !== 0 || voiceRate !== 1 || voiceStyle !== 'none';
+
   return (
     <>
       <Grid container direction="row" spacing={3}>
@@ -96,6 +98,7 @@ export default function TTSConfig(props: {
                 </Typography>
               </>
             }
+            style={{ color: nonDefaultVoice ? red[300] : 'white' }}
             className={classes.warning}
           >
             <Warning />

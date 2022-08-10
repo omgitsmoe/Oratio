@@ -54,5 +54,6 @@ that channel:`,
     'Non-default (style: none, volume: 100, pitch: 0, rate: 1) voice settings will incur ' +
     'additional costs, since the number of characters to set these options will be ' +
     'considered as billable characters by Azure speech. So use the least amount of non-default' +
-    'values possible!',
+    'values possible! This warning sign will be colored red if there are any settings that ' +
+    'occur any additional costs!',
 };
