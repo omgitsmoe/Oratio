@@ -111,7 +111,6 @@ async function handleOpenObs() {
 }
 
 const localStorageVoiceStyle = 'ttsVoiceStyle';
-const localStorageVoiceVolume = 'ttsVoiceVolume';
 const localStorageVoicePitch = 'ttsVoicePitch';
 const localStorageVoiceRate = 'ttsVoiceRate';
 
@@ -124,6 +123,9 @@ const chat: ChatInteraction = new ChatInteraction(
     mirrorToChat: localStorage.getItem('mirrorToChat') === '1',
   }
 );
+
+// TODO remove
+const voiceVolume = 100;
 
 export default function Home() {
   const classes = useStyles();
@@ -168,9 +170,6 @@ export default function Home() {
   const [voiceStyle, setVoiceStyle] = React.useState(
     localStorage.getItem(localStorageVoiceStyle) || ''
   );
-  const [voiceVolume, setVoiceVolume] = React.useState(
-    parseInt(localStorage.getItem(localStorageVoiceVolume) || '100', 10)
-  );
   const [voicePitch, setVoicePitch] = React.useState(
     parseFloat(localStorage.getItem(localStorageVoicePitch) || '0')
   );
@@ -194,8 +193,6 @@ export default function Home() {
   function handleConfigLoad(name: string, value: VoiceConfig) {
     setVoiceStyle(value.style);
     localStorage.setItem(localStorageVoiceStyle, value.style);
-    setVoiceVolume(value.volume);
-    localStorage.setItem(localStorageVoiceVolume, value.volume.toString());
     setVoicePitch(value.pitch);
     localStorage.setItem(localStorageVoicePitch, value.pitch.toString());
     setVoiceRate(value.rate);
@@ -279,7 +276,6 @@ export default function Home() {
   }, [
     ttsActive,
     voiceStyle,
-    voiceVolume,
     voicePitch,
     voiceRate,
     textSoundMuted,
@@ -484,14 +480,6 @@ export default function Home() {
                 voicePitch={voicePitch}
                 voiceRate={voiceRate}
                 voiceStyle={voiceStyle}
-                voiceVolume={voiceVolume}
-                onVolumeChange={(value: number) => {
-                  setVoiceVolume(value);
-                  localStorage.setItem(
-                    localStorageVoiceVolume,
-                    value.toString()
-                  );
-                }}
                 onStyleChange={(value: string) => {
                   setVoiceStyle(value);
                   localStorage.setItem(localStorageVoiceStyle, value);

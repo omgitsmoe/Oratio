@@ -6,6 +6,7 @@ import {
   Grid,
   Typography,
   Tooltip,
+  Button,
 } from '@material-ui/core';
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import MUIMenuItem from '@material-ui/core/MenuItem';
@@ -16,7 +17,6 @@ import { Warning } from '@material-ui/icons';
 import { red } from '@material-ui/core/colors';
 import * as Theme from './Theme';
 import SliderWithIcon from './settings/SliderWithIcon';
-import VolumeSlider from './settings/VolumeSlider';
 import { voiceStyles } from '../TTSAzure';
 import VoiceConfigBar, { VoiceConfig } from './VoiceConfigBar';
 
@@ -27,6 +27,9 @@ const useStyles = makeStyles(() =>
       margin: theme.spacing(0),
       minWidth: '100%',
     },
+    showButtons: {
+      margin: theme.spacing(2),
+    },
     warning: {
       marginLeft: '.25em',
       color: red[300],
@@ -36,13 +39,11 @@ const useStyles = makeStyles(() =>
 
 export default function TTSConfig(props: {
   voiceStyle: string;
-  voiceVolume: number;
   voicePitch: number;
   voiceRate: number;
   getCurrentSettings: () => VoiceConfig;
   handleConfigLoad: (name: string, value: VoiceConfig) => void;
   onStyleChange: (value: string) => void;
-  onVolumeChange: (value: number) => void;
   onPitchChange: (value: number) => void;
   onRateChange: (value: number) => void;
 }) {
@@ -51,17 +52,17 @@ export default function TTSConfig(props: {
 
   const {
     voiceStyle,
-    voiceVolume,
     voicePitch,
     voiceRate,
     // TODO: use the VoiceConfigBar in the parent directly instead?
     getCurrentSettings,
     handleConfigLoad,
     onStyleChange,
-    onVolumeChange,
     onPitchChange,
     onRateChange,
   } = props;
+
+  const [showSliders, setShowSliders] = React.useState(false);
 
   // NOTE: the official reactjs docs recommend having the state in the parent and providing an
   // on change callback to the child as a prop (see "lifting up state")
@@ -71,16 +72,14 @@ export default function TTSConfig(props: {
   // so every slider change triggers a re-render OF THE PARENT!!!!
   // => use state inside the component that changes everytime the sliders are dragged
   // but only call the callbacks once the slider gets the mouseup event
-  const [tempVoiceVolume, setTempVoiceVolume] = React.useState(voiceVolume);
   const [tempVoicePitch, setTempVoicePitch] = React.useState(voicePitch);
   const [tempVoiceRate, setTempVoiceRate] = React.useState(voiceRate);
 
   // useState's initial value is only initialized once even if the props update after
   useEffect(() => {
-    setTempVoiceVolume(voiceVolume);
     setTempVoicePitch(voicePitch);
     setTempVoiceRate(voiceRate);
-  }, [voiceVolume, voicePitch, voiceRate]);
+  }, [voicePitch, voiceRate]);
 
   return (
     <>
@@ -144,53 +143,55 @@ export default function TTSConfig(props: {
           </FormControl>
         </Grid>
         <Grid item xs={6}>
-          <VolumeSlider
-            value={tempVoiceVolume}
-            label={t('Volume')}
-            valueDisplay="auto"
-            onChange={(event, value) => {
-              setTempVoiceVolume(value as number);
+          <Button
+            color="primary"
+            className={classes.showButtons}
+            onClick={() => {
+              setShowSliders((prev: boolean) => {
+                return !prev;
+              });
             }}
-            onChangeCommitted={(event, value) => {
-              onVolumeChange(value as number);
-            }}
-          />
+          >
+            {showSliders ? t('Hide options') : t('Show more options')}
+          </Button>
         </Grid>
       </Grid>
-      <Grid container direction="row" spacing={3}>
-        <Grid item xs={6}>
-          <SliderWithIcon
-            value={tempVoicePitch}
-            label={t('Pitch (+/- in %)')}
-            min={-100}
-            max={100}
-            step={1}
-            onChange={(event, value) => {
-              setTempVoicePitch(value as number);
-            }}
-            onChangeCommitted={(event, value) => {
-              onPitchChange(value as number);
-            }}
-            icon={<WavesIcon />}
-          />
+      {showSliders && (
+        <Grid container direction="row" spacing={3}>
+          <Grid item xs={6}>
+            <SliderWithIcon
+              value={tempVoicePitch}
+              label={t('Pitch (+/- in %)')}
+              min={-100}
+              max={100}
+              step={1}
+              onChange={(event, value) => {
+                setTempVoicePitch(value as number);
+              }}
+              onChangeCommitted={(event, value) => {
+                onPitchChange(value as number);
+              }}
+              icon={<WavesIcon />}
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <SliderWithIcon
+              value={tempVoiceRate}
+              label={t('Rate')}
+              min={0}
+              max={3}
+              step={0.01}
+              onChange={(event, value) => {
+                setTempVoiceRate(value as number);
+              }}
+              onChangeCommitted={(event, value) => {
+                onRateChange(value as number);
+              }}
+              icon={<SpeedIcon />}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={6}>
-          <SliderWithIcon
-            value={tempVoiceRate}
-            label={t('Rate')}
-            min={0}
-            max={3}
-            step={0.01}
-            onChange={(event, value) => {
-              setTempVoiceRate(value as number);
-            }}
-            onChangeCommitted={(event, value) => {
-              onRateChange(value as number);
-            }}
-            icon={<SpeedIcon />}
-          />
-        </Grid>
-      </Grid>
+      )}
     </>
   );
 }
