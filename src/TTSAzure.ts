@@ -114,7 +114,7 @@ const ssmlProsody = (
 
   const pitchAttr = pitch !== defaultPitch ? ` pitch="${pitch}%"` : '';
   const rateAttr = rate !== defaultRate ? ` rate="${rate}"` : '';
-  const volumeAttr = rate !== defaultVolume ? ` volume="${volume}"` : '';
+  const volumeAttr = volume !== defaultVolume ? ` volume="${volume}"` : '';
   return `<prosody${pitchAttr}${rateAttr}${volumeAttr}>${contents}</prosody>`;
 };
 
