@@ -7,6 +7,7 @@ import {
 import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
 import { emoteNameToUrl } from './components/Emotes';
+import { TTSCache } from './TTSCache';
 
 export const voiceStyles: { [key: string]: string } = {
   'advertisement-upbeat':
@@ -169,12 +170,37 @@ export type TTSVoiceSettings = {
   voiceVolume: number;
 };
 
+enum QueuedAudioKind {
+  Raw = 0,
+  Base64,
+}
+
+type QueuedAudioRaw = {
+  kind: QueuedAudioKind.Raw;
+  settings: TTSVoiceSettings;
+  phrase: string;
+  buffer: ArrayBuffer;
+}
+
+type QueuedAudioB64 = {
+  kind: QueuedAudioKind.Base64;
+  settings: TTSVoiceSettings;
+  phrase: string;
+  base64: string;
+}
+
+type QueuedAudio =
+  | QueuedAudioRaw
+  | QueuedAudioB64;
+
 export class AzureTTS {
   settings: TTSSettings;
 
+  #cache: TTSCache<string, string>;
+
   #synthesizer: SpeechSynthesizer | null;
 
-  #audioQueue: ArrayBuffer[];
+  #audioQueue: QueuedAudio[];
 
   #isPlaying: boolean;
 
@@ -183,8 +209,9 @@ export class AzureTTS {
   // need to take the time into account that azure needs to process the request
   static readonly PAUSE_BETWEEN_PHRASES_MS = 100;
 
-  constructor(ttsSettings: TTSSettings) {
+  constructor(ttsSettings: TTSSettings, cache: TTSCache<string, string>) {
     this.settings = ttsSettings;
+    this.#cache = cache;
 
     this.#audioQueue = [];
     this.#isPlaying = false;
@@ -233,9 +260,14 @@ export class AzureTTS {
     this.isOpen = false;
   }
 
+  public static buildLookupKey(phrase: string, voiceSettings: TTSVoiceSettings) {
+    return `${voiceSettings.voiceName}|${voiceSettings.voiceStyle}|` +
+      `p${voiceSettings.voicePitch}r${voiceSettings.voiceRate}:${phrase}`;
+  }
+
   async queuePhrase(phrase: string, voiceSettings: TTSVoiceSettings) {
     // TODO process phrase into words/emotes etc. before sending it to the browser source server
-    let finalPhrase = phrase;
+    let finalPhrase = phrase.trim();
     if (this.settings.skipEmotes) {
       const words = phrase.split(' ');
       finalPhrase = words
@@ -248,6 +280,21 @@ export class AzureTTS {
 
     // skipping emotes might have reduced the phrase to length 0
     if (finalPhrase.length === 0) {
+      return;
+    }
+
+    const cached = this.#cache.get(AzureTTS.buildLookupKey(phrase, voiceSettings));
+    if (cached) {
+      console.log('using cached phrase');
+
+      this.#audioQueue.push({
+        kind: QueuedAudioKind.Base64,
+        phrase,
+        settings: voiceSettings,
+        base64: cached,
+      });
+      if (!this.#isPlaying) this.playOne();
+
       return;
     }
 
@@ -267,7 +314,7 @@ export class AzureTTS {
       )
     );
 
-    this.synthesizeAndQueuePhrase(ssml);
+    this.synthesizeAndQueuePhrase(ssml, finalPhrase, voiceSettings);
   }
 
   static arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -283,27 +330,39 @@ export class AzureTTS {
 
   private async playOne() {
     const audioData = this.#audioQueue.shift();
-    if (audioData) {
-      this.#isPlaying = true;
-      // TODO can the default audio format (mp3) change without changing the sdk version?
-      const sound = new Howl({
-        src: `data:audio/mpeg;base64,${AzureTTS.arrayBufferToBase64(
-          audioData
-        )}`,
-        autoplay: true,
-        onend: () => {
-          // keep isPlaying on a delay
-          setTimeout(() => {
-            this.playOne();
-          }, AzureTTS.PAUSE_BETWEEN_PHRASES_MS);
-        },
-      });
-    } else {
+    if (!audioData) {
       this.#isPlaying = false;
+      return;
     }
+
+    this.#isPlaying = true;
+
+    let src: string | undefined;
+    switch(audioData.kind) {
+      case QueuedAudioKind.Raw:
+        src = `data:audio/mpeg;base64,${AzureTTS.arrayBufferToBase64(audioData.buffer)}`;
+        // add the phrase to the cache
+        this.#cache.put(AzureTTS.buildLookupKey(audioData.phrase, audioData.settings), src);
+        break;
+      case QueuedAudioKind.Base64:
+        src = audioData.base64;
+        break;
+    }
+
+    // TODO can the default audio format (mp3) change without changing the sdk version?
+    const sound = new Howl({
+      src,
+      autoplay: true,
+      onend: () => {
+        // keep isPlaying on a delay
+        setTimeout(() => {
+          this.playOne();
+        }, AzureTTS.PAUSE_BETWEEN_PHRASES_MS);
+      },
+    });
   }
 
-  private async synthesizeAndQueuePhrase(ssml: string) {
+  private async synthesizeAndQueuePhrase(ssml: string, phrase: string, settings: TTSVoiceSettings) {
     if (!this.#synthesizer) {
       console.error(
         'AzureTTS: missing synthesizer - missing or invalid API key or region'
@@ -322,7 +381,12 @@ export class AzureTTS {
         // since there is no audio being played
         const { audioData } = result;
         if (audioData && audioData.byteLength !== 0) {
-          this.#audioQueue.push(audioData);
+          this.#audioQueue.push({
+            kind: QueuedAudioKind.Raw,
+            phrase,
+            settings,
+            buffer: audioData,
+          });
           if (!this.#isPlaying) this.playOne();
           return audioData;
         }
