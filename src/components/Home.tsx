@@ -24,6 +24,7 @@ import ChatInteraction from '../TwitchChat';
 import { TTSSettings, AzureTTS } from '../TTSAzure';
 import { VoiceConfig } from './VoiceConfigBar';
 import TTSConfig from './TTSConfig';
+import { TTSCache } from '../TTSCache';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -309,7 +310,16 @@ export default function Home() {
 
     if (ttsSettings.apiKey && ttsSettings.region) {
       setTtsHasAuth(true);
+      // TODO add capacity option in tts settings
       tts.current = new AzureTTS(ttsSettings);
+
+      // request cache from main thread
+      ipcRenderer.invoke('getTTSCache').then((result) => {
+        if (tts.current) {
+          console.log('cache set');
+          tts.current.cache = TTSCache.fromJSON(result);
+        }
+      })
 
       if (ttsActive) {
         tts.current.open();
@@ -319,7 +329,13 @@ export default function Home() {
     }
 
     return () => {
-      if (tts.current) tts.current.close();
+      if (tts.current) {
+        tts.current.close();
+        if (tts.current.cache) {
+          // send updated cache data to main thread
+          ipcRenderer.send('updateTTSCache', tts.current.cache.toJSON());
+        }
+      }
     };
   }, []);
 

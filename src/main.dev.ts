@@ -25,6 +25,7 @@ import log from 'electron-log';
 import keytar from 'keytar';
 import MenuBuilder from './menu';
 import TwitchAuth from './TwitchAuth';
+import * as fs from 'fs';
 
 export default class AppUpdater {
   constructor() {
@@ -39,13 +40,36 @@ export default class AppUpdater {
 let mainWindow: BrowserWindow | null = null;
 const isDevEnv = process.env.NODE_ENV === 'development';
 
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets')
+  : path.join(__dirname, '../assets');
+
+const getAssetPath = (...paths: string[]): string => {
+  return path.join(RESOURCES_PATH, ...paths);
+};
+
+const cacheFile = getAssetPath('cache.json');
+let cacheJSON: string | undefined;
+
+// NOTE: data that is sent over IPC is serialized, so sending an instance of a class
+// won't work unless it can be fulle serialized and re-serialized
+// -> just load the json and set that back and forth using ipc
+async function loadCacheFile() {
+  try {
+    cacheJSON = fs.readFileSync(cacheFile, 'utf-8');
+  } catch {
+    // cache file does not exist
+    cacheJSON = '{ "capacity": 100, "entries": [] }';
+  }
+}
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
 }
 
 if (
-  process.env.NODE_ENV === 'development' ||
+  isDevEnv ||
   process.env.DEBUG_PROD === 'true'
 ) {
   require('electron-debug')();
@@ -68,14 +92,6 @@ const createWindow = async () => {
   if (isDevEnv || process.env.DEBUG_PROD === 'true') {
     await installExtensions();
   }
-
-  const RESOURCES_PATH = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../assets');
-
-  const getAssetPath = (...paths: string[]): string => {
-    return path.join(RESOURCES_PATH, ...paths);
-  };
 
   mainWindow = new BrowserWindow({
     show: false,
@@ -119,6 +135,9 @@ const createWindow = async () => {
   });
 
   mainWindow.on('closed', () => {
+    // write cache file on close
+    if (cacheJSON) fs.writeFileSync(cacheFile, cacheJSON);
+
     // mainWindow = null;
     if (process.platform !== 'darwin') {
       app.quit();
@@ -167,17 +186,13 @@ app
       }
     });
 
-    const ASSETS_PATH = app.isPackaged
-      ? path.join(process.resourcesPath, 'assets')
-      : path.join(__dirname, '../assets');
-
     // start our server in a separate process to keep main/server performance indipendent
     // NOTE: using child_process over hidden renderer/webworker since we don't need
     // access to electron on the server and a forked process might be more lightweight?
     // while a webworker might not be able to handle/use? all the things we need
     //
     // will close automatically when this process exits
-    const serverProc = child_process.fork(`${ASSETS_PATH}/dist/server.js`);
+    const serverProc = child_process.fork(getAssetPath('dist', 'server.js'));
     if (serverProc !== null) {
       if (serverProc.stdout !== null) {
         serverProc.stdout.on('data', (data) => {
@@ -247,4 +262,18 @@ ipcMain.on('getAzureKey', async (event) => {
 
 ipcMain.on('setAzureKey', async (_event, key: string) => {
   keytar.setPassword('Oratio-Azure', 'main', key);
+});
+
+ipcMain.handle('getTTSCache', async (_event) => {
+  if (!cacheJSON) {
+    await loadCacheFile();
+    return cacheJSON;
+  }
+
+  return cacheJSON;
+});
+
+ipcMain.on('updateTTSCache', async (_event, json: string) => {
+  console.log('updating cache main');
+  cacheJSON = json;
 });
