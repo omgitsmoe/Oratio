@@ -196,7 +196,7 @@ type QueuedAudio =
 export class AzureTTS {
   settings: TTSSettings;
 
-  #cache: TTSCache<string, string>;
+  cache: TTSCache<string, string> | undefined;
 
   #synthesizer: SpeechSynthesizer | null;
 
@@ -209,9 +209,8 @@ export class AzureTTS {
   // need to take the time into account that azure needs to process the request
   static readonly PAUSE_BETWEEN_PHRASES_MS = 100;
 
-  constructor(ttsSettings: TTSSettings, cache: TTSCache<string, string>) {
+  constructor(ttsSettings: TTSSettings) {
     this.settings = ttsSettings;
-    this.#cache = cache;
 
     this.#audioQueue = [];
     this.#isPlaying = false;
@@ -283,19 +282,23 @@ export class AzureTTS {
       return;
     }
 
-    const cached = this.#cache.get(AzureTTS.buildLookupKey(phrase, voiceSettings));
-    if (cached) {
-      console.log('using cached phrase');
+    if (this.cache) {
+      console.log(this.cache);
+      const cached = this.cache.get(AzureTTS.buildLookupKey(phrase, voiceSettings));
+      if (cached) {
+        console.log('using cached phrase');
 
-      this.#audioQueue.push({
-        kind: QueuedAudioKind.Base64,
-        phrase,
-        settings: voiceSettings,
-        base64: cached,
-      });
-      if (!this.#isPlaying) this.playOne();
+        this.#audioQueue.push({
+          kind: QueuedAudioKind.Base64,
+          // TODO not needed since it's already cached
+          phrase,
+          settings: voiceSettings,
+          base64: cached,
+        });
+        if (!this.#isPlaying) this.playOne();
 
-      return;
+        return;
+      }
     }
 
     const parsedAndEscaped = xmlEscape(replaceEmojiCodes(finalPhrase));
@@ -342,7 +345,7 @@ export class AzureTTS {
       case QueuedAudioKind.Raw:
         src = `data:audio/mpeg;base64,${AzureTTS.arrayBufferToBase64(audioData.buffer)}`;
         // add the phrase to the cache
-        this.#cache.put(AzureTTS.buildLookupKey(audioData.phrase, audioData.settings), src);
+        if (this.cache) this.cache.put(AzureTTS.buildLookupKey(audioData.phrase, audioData.settings), src);
         break;
       case QueuedAudioKind.Base64:
         src = audioData.base64;

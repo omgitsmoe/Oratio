@@ -123,6 +123,7 @@ export class TTSCache<K, V> {
             this.#lru = prev_lru.newer;
             prev_lru.older = undefined;
 
+            // remove refs
             prev_lru.newer = prev_lru.older = undefined;
             this.#map.delete(prev_lru.key);
 
@@ -143,8 +144,10 @@ export class TTSCache<K, V> {
         let i = 0;
         while (entry) {
             arr[i++] = { key: entry.key, value: entry.value };
-            entry = entry.older;
+            entry = entry.newer;
         }
+
+        if (i !== arr.length) throw 'Length mismatch during serialization';
 
         return JSON.stringify({capacity: this.#capacity, entries: arr});
     }
@@ -160,6 +163,7 @@ export class TTSCache<K, V> {
 
     public static fromKeyValueArray<K, V>(from: KeyValue<K, V>[], capacity: number): TTSCache<K, V> {
         if (capacity < from.length) throw 'Capacity too small to fit all serialized entries';
+
         const result = new TTSCache<K, V>(capacity);
         for (const kv of from) {
             result.put(kv.key, kv.value);
