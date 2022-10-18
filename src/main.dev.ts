@@ -23,9 +23,9 @@ import {
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import keytar from 'keytar';
+import * as fs from 'fs';
 import MenuBuilder from './menu';
 import TwitchAuth from './TwitchAuth';
-import * as fs from 'fs';
 
 export default class AppUpdater {
   constructor() {
@@ -68,10 +68,7 @@ if (process.env.NODE_ENV === 'production') {
   sourceMapSupport.install();
 }
 
-if (
-  isDevEnv ||
-  process.env.DEBUG_PROD === 'true'
-) {
+if (isDevEnv || process.env.DEBUG_PROD === 'true') {
   require('electron-debug')();
 }
 
