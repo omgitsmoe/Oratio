@@ -3,12 +3,14 @@ import {
   SpeechSynthesizer,
   AudioConfig,
   Connection,
+  Recognizer,
 } from 'microsoft-cognitiveservices-speech-sdk';
 import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
 import { emoteNameToUrl } from './components/Emotes';
 import { TTSCache } from './TTSCache';
 
+Recognizer.enableTelemetry(false);
 export const voiceStyles: { [key: string]: string } = {
   'advertisement-upbeat':
     'Expresses an excited and high-energy tone for promoting a product or service.',
