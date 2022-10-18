@@ -6,6 +6,11 @@ type Entry<K, V> = {
   value: V;
 };
 
+export type CacheEntry<K, V> = {
+  key: K;
+  value: V;
+};
+
 type KeyValue<K, V> = { key: K; value: V };
 
 export default class TTSCache<K, V> {
@@ -37,14 +42,21 @@ export default class TTSCache<K, V> {
     return this.#capacity;
   }
 
+  public get mru(): CacheEntry<K, V> | undefined {
+    if (this.#mru) return { key: this.#mru.key, value: this.#mru.value };
+    return undefined;
+  }
+
+  public get lru(): CacheEntry<K, V> | undefined {
+    if (this.#lru) return { key: this.#lru.key, value: this.#lru.value };
+    return undefined;
+  }
+
   public get(key: K): V | undefined {
-    console.log('get start');
     if (this.size === 0) return;
 
     const entry = this.#map.get(key);
-    console.log(this.#map);
     if (!entry) return;
-    console.log('entry found');
 
     this.used(entry);
     // eslint-disable-next-line consistent-return
@@ -126,7 +138,6 @@ export default class TTSCache<K, V> {
     if (this.#size > this.capacity) {
       // cache full -> delete lru
       const prevLru = this.#lru!;
-      console.log('full -> deleting lru', prevLru.key);
       this.#lru = prevLru.newer;
       prevLru.older = undefined;
 
