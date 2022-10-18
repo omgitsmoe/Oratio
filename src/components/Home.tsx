@@ -24,7 +24,7 @@ import ChatInteraction from '../TwitchChat';
 import { TTSSettings, AzureTTS } from '../TTSAzure';
 import { VoiceConfig } from './VoiceConfigBar';
 import TTSConfig from './TTSConfig';
-import { TTSCache } from '../TTSCache';
+import TTSCache from '../TTSCache';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -191,7 +191,7 @@ export default function Home() {
     };
   }
 
-  function handleConfigLoad(name: string, value: VoiceConfig) {
+  function handleConfigLoad(_name: string, value: VoiceConfig) {
     setVoiceStyle(value.style);
     localStorage.setItem(localStorageVoiceStyle, value.style);
     setVoicePitch(value.pitch);
@@ -314,12 +314,20 @@ export default function Home() {
       tts.current = new AzureTTS(ttsSettings);
 
       // request cache from main thread
-      ipcRenderer.invoke('getTTSCache').then((result) => {
-        if (tts.current) {
-          console.log('cache set');
-          tts.current.cache = TTSCache.fromJSON(result);
-        }
-      })
+      ipcRenderer
+        .invoke('getTTSCache')
+        .then((result) => {
+          if (tts.current) {
+            console.log('cache set');
+            tts.current.cache = TTSCache.fromJSON(result);
+            return null;
+          }
+
+          return null;
+        })
+        .catch((err) => {
+          console.error(err);
+        });
 
       if (ttsActive) {
         tts.current.open();
