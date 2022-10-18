@@ -8,9 +8,11 @@ import {
 import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
 import { emoteNameToUrl } from './components/Emotes';
-import { TTSCache } from './TTSCache';
+import TTSCache from './TTSCache';
 
+// disable telemetry data
 Recognizer.enableTelemetry(false);
+
 export const voiceStyles: { [key: string]: string } = {
   'advertisement-upbeat':
     'Expresses an excited and high-energy tone for promoting a product or service.',
@@ -182,18 +184,16 @@ type QueuedAudioRaw = {
   settings: TTSVoiceSettings;
   phrase: string;
   buffer: ArrayBuffer;
-}
+};
 
 type QueuedAudioB64 = {
   kind: QueuedAudioKind.Base64;
   settings: TTSVoiceSettings;
   phrase: string;
   base64: string;
-}
+};
 
-type QueuedAudio =
-  | QueuedAudioRaw
-  | QueuedAudioB64;
+type QueuedAudio = QueuedAudioRaw | QueuedAudioB64;
 
 export class AzureTTS {
   settings: TTSSettings;
@@ -261,9 +261,14 @@ export class AzureTTS {
     this.isOpen = false;
   }
 
-  public static buildLookupKey(phrase: string, voiceSettings: TTSVoiceSettings) {
-    return `${voiceSettings.voiceName}|${voiceSettings.voiceStyle}|` +
-      `p${voiceSettings.voicePitch}r${voiceSettings.voiceRate}:${phrase}`;
+  public static buildLookupKey(
+    phrase: string,
+    voiceSettings: TTSVoiceSettings
+  ) {
+    return (
+      `${voiceSettings.voiceName}|${voiceSettings.voiceStyle}|` +
+      `p${voiceSettings.voicePitch}r${voiceSettings.voiceRate}:${phrase}`
+    );
   }
 
   async queuePhrase(phrase: string, voiceSettings: TTSVoiceSettings) {
@@ -286,7 +291,9 @@ export class AzureTTS {
 
     if (this.cache) {
       console.log(this.cache);
-      const cached = this.cache.get(AzureTTS.buildLookupKey(phrase, voiceSettings));
+      const cached = this.cache.get(
+        AzureTTS.buildLookupKey(phrase, voiceSettings)
+      );
       if (cached) {
         console.log('using cached phrase');
 
@@ -343,15 +350,23 @@ export class AzureTTS {
     this.#isPlaying = true;
 
     let src: string | undefined;
-    switch(audioData.kind) {
+    switch (audioData.kind) {
       case QueuedAudioKind.Raw:
-        src = `data:audio/mpeg;base64,${AzureTTS.arrayBufferToBase64(audioData.buffer)}`;
+        src = `data:audio/mpeg;base64,${AzureTTS.arrayBufferToBase64(
+          audioData.buffer
+        )}`;
         // add the phrase to the cache
-        if (this.cache) this.cache.put(AzureTTS.buildLookupKey(audioData.phrase, audioData.settings), src);
+        if (this.cache)
+          this.cache.put(
+            AzureTTS.buildLookupKey(audioData.phrase, audioData.settings),
+            src
+          );
         break;
       case QueuedAudioKind.Base64:
         src = audioData.base64;
         break;
+      default:
+        throw new Error('unknown QueuedAudioKind');
     }
 
     // TODO can the default audio format (mp3) change without changing the sdk version?
@@ -367,7 +382,11 @@ export class AzureTTS {
     });
   }
 
-  private async synthesizeAndQueuePhrase(ssml: string, phrase: string, settings: TTSVoiceSettings) {
+  private async synthesizeAndQueuePhrase(
+    ssml: string,
+    phrase: string,
+    settings: TTSVoiceSettings
+  ) {
     if (!this.#synthesizer) {
       console.error(
         'AzureTTS: missing synthesizer - missing or invalid API key or region'
