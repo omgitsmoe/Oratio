@@ -10,9 +10,6 @@ import uEmojiParser from 'universal-emoji-parser';
 import { emoteNameToUrl } from './components/Emotes';
 import TTSCache from './TTSCache';
 
-// disable telemetry data
-Recognizer.enableTelemetry(false);
-
 export const voiceStyles: { [key: string]: string } = {
   'advertisement-upbeat':
     'Expresses an excited and high-energy tone for promoting a product or service.',
@@ -247,6 +244,9 @@ export class AzureTTS {
       this.settings.apiKey,
       this.settings.region
     );
+
+    // disable telemetry data
+    Recognizer.enableTelemetry(false);
 
     // this needs to be null otherwise it will outaplay on default output
     return new SpeechSynthesizer(speechConfig, null as unknown as AudioConfig);
