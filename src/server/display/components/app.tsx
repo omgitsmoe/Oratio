@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useReducer } from 'react';
-import ReactDOM from 'react-dom';
+import * as ReactDOM from 'react-dom/client';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
@@ -255,7 +255,8 @@ function SpeechPhrase(props: any) {
 
           const emoteName = foundEmote[0];
           const emoteContainer = document.createElement('span');
-          ReactDOM.render(<Emote emoteName={emoteName} />, emoteContainer);
+          const root = ReactDOM.createRoot(emoteContainer);
+          root.render(<Emote emoteName={emoteName} />);
           speechDisplay.current.appendChild(emoteContainer);
           i += emoteName.length;
         } else {

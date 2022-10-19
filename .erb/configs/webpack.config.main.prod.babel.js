@@ -10,6 +10,7 @@ import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 import baseConfig from './webpack.config.base';
 import CheckNodeEnv from '../scripts/CheckNodeEnv';
 import DeleteSourceMaps from '../scripts/DeleteSourceMaps';
+import { webpackPaths } from './webpack.paths';
 
 CheckNodeEnv('production');
 DeleteSourceMaps();
@@ -25,11 +26,20 @@ export default merge(baseConfig, {
 
   target: 'electron-main',
 
-  entry: './src/main.dev.ts',
+  entry: {
+    main: './src/main.dev.ts',
+    // TODO not tested
+    preloadOBS: path.join(webpackPaths.srcPath, 'preloadOBS.ts'),
+  },
 
   output: {
     path: path.join(__dirname, '../../'),
-    filename: './src/main.prod.js',
+    filename: (pathData) => {
+      return pathData.chunk.name.startsWith('main')
+      ? './src/main.prod.js'
+      : './src/[name].js';
+    },
+    // TODO preload scripts need to be umd/esm library type
   },
 
   optimization: {

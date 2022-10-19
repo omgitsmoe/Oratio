@@ -1,12 +1,10 @@
 import React, { useRef, useEffect, useReducer } from 'react';
-import ReactDOM from 'react-dom';
+import * as ReactDOM from 'react-dom/client';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
 import { Emote, emoteNameToUrl } from './Emotes';
-
-const ipc = require('electron').ipcRenderer;
 
 const DEFAULT_TIMEOUT = 4000;
 
@@ -191,7 +189,8 @@ function SpeechPhrase(props: any) {
 
           const emoteName = foundEmote[0];
           const emoteContainer = document.createElement('span');
-          ReactDOM.render(<Emote emoteName={emoteName} />, emoteContainer);
+          const root = ReactDOM.createRoot(emoteContainer);
+          root.render(<Emote emoteName={emoteName} />);
           speechDisplay.current.appendChild(emoteContainer);
           i += emoteName.length;
         } else {
@@ -311,7 +310,7 @@ export default function OBS() {
   useEffect(() => {
     let runningId = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ipc.on('speech', (_event: any, message: any) => {
+    window.electronAPI.onPhraseFromMain((_event: any, message: string) => {
       const key: string = uniqueHash();
       dispatch({ type: 'push', phrase: { message, key, runningId } });
       runningId += 1;

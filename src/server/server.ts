@@ -88,7 +88,7 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-process.on('message', (m) => {
+process.on('message', (m: { action: string; port: number }) => {
   if (m.action === 'listen') {
     const port = m.port || 4563;
     server.listen(port, () => {

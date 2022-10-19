@@ -1,7 +1,7 @@
 import React from 'react';
-import { render } from 'react-dom';
+import * as ReactDOM from 'react-dom/client';
 import './App.global.css';
-import { HashRouter as Router, Switch, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 // eslint-disable-next-line import/no-named-as-default
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
@@ -59,15 +59,16 @@ i18n
 export default function App() {
   return (
     <Router>
-      <Switch>
-        <Route path="/home" component={Home} />
-        <Route path="/obs" component={OBS} />
-        <Route path="/preferences" component={Preferences} />
-        <Route path="/emotes" component={Emotes} />
-        <Route path="/tts" component={TTSSettings} />
-      </Switch>
+      <Routes>
+        <Route path="/home" element={<Home />} />
+        <Route path="/home" element={<OBS />} />
+        <Route path="/preferences" element={<Preferences />} />
+        <Route path="/emotes" element={<Emotes />} />
+        <Route path="/tts" element={<TTSSettings />} />
+      </Routes>
     </Router>
   );
 }
 
-render(<App />, document.getElementById('root'));
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

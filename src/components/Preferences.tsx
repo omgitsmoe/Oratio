@@ -124,7 +124,6 @@ export default function Preferences() {
               <Grid item xs={6}>
                 <SliderWithIcon
                   value={textSpeed}
-                  defaultValue="75"
                   label={t('Text Speed')}
                   displayValue="on"
                   onChange={handleTextSpeedChange}
