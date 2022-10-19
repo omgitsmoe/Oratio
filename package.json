@@ -42,6 +42,7 @@
       "index_injected.html",
       "main.prod.js",
       "main.prod.js.map",
+      "preloadOBS.js",
       "package.json"
     ],
     "afterSign": ".erb/scripts/Notarize.js",

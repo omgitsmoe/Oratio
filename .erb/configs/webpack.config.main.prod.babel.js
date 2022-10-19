@@ -10,7 +10,7 @@ import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 import baseConfig from './webpack.config.base';
 import CheckNodeEnv from '../scripts/CheckNodeEnv';
 import DeleteSourceMaps from '../scripts/DeleteSourceMaps';
-import { webpackPaths } from './webpack.paths';
+import webpackPaths from './webpack.paths';
 
 CheckNodeEnv('production');
 DeleteSourceMaps();
@@ -39,7 +39,9 @@ export default merge(baseConfig, {
       ? './src/main.prod.js'
       : './src/[name].js';
     },
-    // TODO preload scripts need to be umd/esm library type
+    library: {
+      type: 'umd',
+    },
   },
 
   optimization: {

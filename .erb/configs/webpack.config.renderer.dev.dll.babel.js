@@ -38,7 +38,9 @@ export default merge(baseConfig, {
     library: 'renderer',
     path: dist,
     filename: '[name].dev.dll.js',
-    libraryTarget: 'var',
+    library: {
+      type: 'var',
+    },
   },
 
   plugins: [
