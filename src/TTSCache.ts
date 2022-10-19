@@ -150,6 +150,32 @@ export default class TTSCache<K, V> {
     }
   }
 
+  public updateCapacity(capacity: number) {
+    if (capacity <= 0) throw new Error('negative or zero capacity');
+
+    this.#capacity = capacity;
+    if (this.#size <= capacity) return;
+
+    // size has to be one at least -> lru will be defined
+    let entry: Entry<K, V> = this.#lru!;
+    while (this.#size > capacity) {
+      this.#map.delete(entry.key);
+      this.#size -= 1;
+      if (entry.newer) {
+        entry.newer.older = undefined;
+        this.#lru = entry.newer;
+        entry = entry.newer;
+      } else {
+        break;
+      }
+    }
+
+    if (this.#size > capacity)
+      throw new Error(
+        'ran out of cache entries when pruning to fit new cach size'
+      );
+  }
+
   public clear() {
     this.#lru = undefined;
     this.#mru = undefined;
