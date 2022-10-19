@@ -61,7 +61,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/home" element={<Home />} />
-        <Route path="/home" element={<OBS />} />
+        <Route path="/obs" element={<OBS />} />
         <Route path="/preferences" element={<Preferences />} />
         <Route path="/emotes" element={<Emotes />} />
         <Route path="/tts" element={<TTSSettings />} />

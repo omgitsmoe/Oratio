@@ -31,11 +31,13 @@ node_modules
 .DS_Store
 
 assets/emotes/*
+assets/cache.json
 
 # App packaged
 release
 src/main.prod.js
 src/main.prod.js.map
+src/preloadOBS.js
 src/renderer.prod.js
 src/renderer.prod.js.map
 src/style.css
