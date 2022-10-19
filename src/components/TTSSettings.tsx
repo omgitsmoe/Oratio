@@ -223,6 +223,7 @@ type VoiceOption = {
 };
 
 const localStorageVoicesList = 'ttsVoicesList';
+export const localStorageCacheLimit = 'ttsCacheLimit';
 
 export default function TTSSettings() {
   const classes = useStyles();
@@ -244,7 +245,12 @@ export default function TTSSettings() {
     localStorage.getItem('ttsSkipEmotes') === '1'
   );
 
-  // TODO persist voices in localstorage and only update on user request
+  // TODO button to clear cache
+  const [cacheLimit, setCacheLimit] = React.useState(
+    localStorage.getItem(localStorageCacheLimit) || '500'
+  );
+  const [cacheLimitError, setCacheLimitError] = React.useState('');
+
   const [availableVoices, setAvailableVoices] = React.useState<VoiceOption[]>(
     JSON.parse(localStorage.getItem(localStorageVoicesList) || '[]')
   );
@@ -428,6 +434,32 @@ export default function TTSSettings() {
                 label={t('Skip emotes')}
                 labelPlacement="start"
                 style={{ marginLeft: '8px' }}
+              />
+            </Grid>
+          </Grid>
+          <Grid container direction="row" spacing={3}>
+            <Grid item xs={6}>
+              <TextField
+                id="cache-limit"
+                label="Audio Cache Phrase Limit"
+                type="number"
+                className={classes.formControl}
+                value={cacheLimit}
+                InputProps={{ inputProps: { min: 0 } }}
+                error={cacheLimitError.length > 0}
+                helperText={cacheLimitError}
+                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                  const trimmed = e.target.value.trim();
+                  if (!trimmed.match(/^[0-9]+$/)) {
+                    setCacheLimitError(
+                      'Cache limit needs to be a whole number >= 0'
+                    );
+                  } else {
+                    setCacheLimitError('');
+                    localStorage.setItem(localStorageCacheLimit, trimmed);
+                  }
+                  setCacheLimit(trimmed);
+                }}
               />
             </Grid>
           </Grid>

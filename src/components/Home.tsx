@@ -25,6 +25,7 @@ import { TTSSettings, AzureTTS } from '../TTSAzure';
 import { VoiceConfig } from './VoiceConfigBar';
 import TTSConfig from './TTSConfig';
 import TTSCache from '../TTSCache';
+import { localStorageCacheLimit } from './TTSSettings';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -313,21 +314,30 @@ export default function Home() {
       // TODO add capacity option in tts settings
       tts.current = new AzureTTS(ttsSettings);
 
-      // request cache from main thread
-      ipcRenderer
-        .invoke('getTTSCache')
-        .then((result) => {
-          if (tts.current) {
-            console.log('cache set');
-            tts.current.cache = TTSCache.fromJSON(result);
-            return null;
-          }
+      const cacheCap = parseInt(
+        localStorage.getItem(localStorageCacheLimit) || '500',
+        10
+      );
+      if (cacheCap > 0) {
+        // request cache from main thread
+        ipcRenderer
+          .invoke('getTTSCache')
+          .then((result) => {
+            if (tts.current) {
+              console.log('cache set');
+              tts.current.cache = TTSCache.fromJSON(result);
+              if (tts.current.cache) {
+                tts.current.cache.updateCapacity(cacheCap);
+              }
+              return null;
+            }
 
-          return null;
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+            return null;
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
 
       if (ttsActive) {
         tts.current.open();
