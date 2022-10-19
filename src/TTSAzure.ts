@@ -265,10 +265,15 @@ export class AzureTTS {
     phrase: string,
     voiceSettings: TTSVoiceSettings
   ) {
+    // since pauses and intonations are the same between several punctuation chars
+    // we can replace them here with a common one
+    // !. -> . (not ? since that changes tonality)
+    // ,; -> , (could do the same for ' - ', (...), [...])
+    const normalizedPhrase = phrase.replaceAll('!', '.').replaceAll(';', ',');
     return (
       `${voiceSettings.voiceName}|${voiceSettings.voiceStyle}|` +
-      `p${voiceSettings.voicePitch}r${voiceSettings.voiceRate}:${phrase}`
-    );
+      `p${voiceSettings.voicePitch}r${voiceSettings.voiceRate}:${normalizedPhrase}`
+    ).toLowerCase();
   }
 
   async queuePhrase(phrase: string, voiceSettings: TTSVoiceSettings) {
