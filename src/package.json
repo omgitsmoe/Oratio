@@ -13,6 +13,9 @@
     "electron-rebuild": "node -r ../.erb/scripts/BabelRegister.js ../.erb/scripts/ElectronRebuild.js",
     "postinstall": "yarn electron-rebuild"
   },
+  "resolutions": {
+    "node-abi": "^3.28.0"
+  },
   "license": "MIT",
   "dependencies": {
     "keytar": "7.6"
