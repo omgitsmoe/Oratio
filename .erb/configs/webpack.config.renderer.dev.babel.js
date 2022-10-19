@@ -16,7 +16,7 @@ if (process.env.NODE_ENV === 'production') {
   CheckNodeEnv('development');
 }
 
-const port = process.env.PORT || 1212;
+export const port = process.env.PORT || 1212;
 const publicPath = `http://localhost:${port}/dist`;
 const manifest = path.resolve(webpackPaths.dllPath, 'renderer.json');
 const requiredByDLLConfig = module.parent.filename.includes(
@@ -258,6 +258,7 @@ export default merge(baseConfig, {
       isBrowser: false,
       env: process.env.NODE_ENV,
       isDevelopment: process.env.NODE_ENV !== 'production',
+      // nodeModules: path.join(webpackPaths.srcPath, 'node_modules'),
       meta: {
         'Content-Security-Policy': {
           'http-equiv': 'Content-Security-Policy',
@@ -308,15 +309,28 @@ export default merge(baseConfig, {
         directory: webpackPaths.dllPath,
       },
     ],
-    onBeforeSetupMiddleware () {
+    setupMiddlewares(middlewares) {
+      console.log('Starting preload.js builder...');
+      const preloadProcess = spawn('npm', ['run', 'start:preload'], {
+        shell: true,
+        stdio: 'inherit',
+      })
+        .on('close', (code) => process.exit(code))
+        .on('error', (spawnError) => console.error(spawnError));
+
       console.log('Starting Main Process...');
-        spawn('npm', ['run', 'start:main'], {
-          shell: true,
-          env: process.env,
-          stdio: 'inherit',
+      spawn('npm', ['run', 'start:main'], {
+        shell: true,
+        env: process.env,
+        stdio: 'inherit',
+      })
+        .on('close', (code) => {
+          preloadProcess.kill();
+          process.exit(code)
         })
-          .on('close', (code) => process.exit(code))
-          .on('error', (spawnError) => console.error(spawnError));
+        .on('error', (spawnError) => console.error(spawnError));
+
+      return middlewares;
     },
   },
 });

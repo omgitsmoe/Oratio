@@ -1,6 +1,7 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import * as ReactDOM from 'react-dom/client';
 import App from './components/app';
 import './display.css';
 
-ReactDOM.hydrate(<App />, document.getElementById('root'));
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+ReactDOM.hydrateRoot(document.getElementById('root')!, <App />);

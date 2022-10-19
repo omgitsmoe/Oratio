@@ -14,7 +14,7 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { red, green } from '@material-ui/core/colors';
-import { BrowserWindow, remote, ipcRenderer } from 'electron';
+import { ipcRenderer } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import * as Theme from './Theme';
@@ -75,41 +75,8 @@ const useStyles = makeStyles(() =>
   })
 );
 
-let win: BrowserWindow | undefined;
 async function handleOpenObs() {
-  // electron.ipcRenderer.on();
-  // BrowserWindow is just the type import, remote.BrowserWindow is the value
-  // const win: BrowserWindow = new remote.BrowserWindow({ .. })
-  if (win === undefined) {
-    win = new remote.BrowserWindow({
-      // backgroundColor: 'blue',
-      height: 600,
-      width: 800,
-      title: 'Oratio OBS Display',
-      autoHideMenuBar: true,
-      // focusable: false,
-      // transparent: true,
-      webPreferences: {
-        nodeIntegration: true,
-        // devTools: true,
-        // Soffscreen: true,
-      },
-    });
-
-    if (process.env.NODE_ENV === 'development') {
-      win.loadURL(
-        `http://localhost:${
-          process.env.PORT || '1212'
-        }/dist/index_injected.html#/obs`
-      );
-    } else {
-      win.loadURL(`file://${__dirname}/index_injected.html#/obs`);
-    }
-
-    win.on('closed', () => {
-      win = undefined;
-    });
-  }
+  ipcRenderer.send('openOBSWindow');
 }
 
 const localStorageVoiceStyle = 'ttsVoiceStyle';
@@ -254,9 +221,9 @@ export default function Home() {
       if (!from_chat && chat.mirrorToChat) {
         chat.sendToChat(phrase);
       }
-      if (win !== undefined) {
-        win.webContents.send('speech', phrase);
-      }
+
+      // send to OBS window, which will forward it to the OBS window if open
+      ipcRenderer.send('sendSpeechOBSWindow', phrase);
 
       // play TTS
       if (ttsActive && tts.current !== null) {

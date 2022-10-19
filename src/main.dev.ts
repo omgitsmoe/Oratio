@@ -97,9 +97,9 @@ const createWindow = async () => {
     icon: getAssetPath('icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
+      // TODO preload script and remove v
       nodeIntegration: true,
-      enableRemoteModule: true,
-      // offscreen: true,
+      contextIsolation: false,
     },
   });
 
@@ -273,4 +273,46 @@ ipcMain.handle('getTTSCache', async (_event) => {
 ipcMain.on('updateTTSCache', async (_event, json: string) => {
   console.log('updating cache main');
   cacheJSON = json;
+});
+
+let obsWindow: BrowserWindow | undefined;
+ipcMain.on('openOBSWindow', () => {
+  if (obsWindow === undefined) {
+    obsWindow = new BrowserWindow({
+      // backgroundColor: 'blue',
+      height: 600,
+      width: 800,
+      title: 'Oratio OBS Display',
+      autoHideMenuBar: true,
+      // focusable: false,
+      // transparent: true,
+      webPreferences: {
+        // preload script and only expose the speechFromMain ipc channel
+        preload: app.isPackaged
+          ? path.join(__dirname, 'preloadOBS.js')
+          : path.join(__dirname, '../.erb/dll/preloadOBS.js'),
+        // NOTE: fixes module not defined error, but it shouldn't be needed
+        // since we only import electron renderer stuff
+        // sandbox: false,
+      },
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+      obsWindow.loadURL(
+        `http://localhost:${
+          process.env.PORT || '1212'
+        }/dist/index_injected.html#/obs`
+      );
+    } else {
+      obsWindow.loadURL(`file://${__dirname}/index_injected.html#/obs`);
+    }
+
+    obsWindow.on('closed', () => {
+      obsWindow = undefined;
+    });
+  }
+});
+
+ipcMain.on('sendSpeechOBSWindow', (_event, phrase: string) => {
+  if (obsWindow) obsWindow.webContents.send('phraseFromMain', phrase);
 });
