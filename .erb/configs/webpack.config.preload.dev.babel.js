@@ -24,13 +24,8 @@ const configuration = {
   output: {
     path: dllPath,
     filename: 'preloadOBS.js',
-    // NOTE: since we merge configs with the baseconfig (which uses libraryTarget: commonjs2)
-    // we also need to set libraryTarget because it gets preferred over library.type
-    // even though it's deprecated?!?!?!?
-    libraryTarget: 'umd',
     library: {
       type: 'umd',
-      // type: 'module',
     },
   },
 
