@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useReducer } from 'react';
-import { remote } from 'electron';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Button, Grid, IconButton, MenuItem, Select } from '@material-ui/core';
@@ -73,7 +72,6 @@ export default function KeybindConfig() {
   const [configNames, setConfigNames] = useState<string[]>([]);
 
   useEffect(() => {
-    let window = remote.BrowserWindow.getFocusedWindow();
     // create look-up table for keycode to keyname
     const keyCodeToKeyName: { [key: number]: string } = {};
     for (const [keyName, keyCode] of Object.entries(hotkeys.keyMap)) {
@@ -84,7 +82,7 @@ export default function KeybindConfig() {
     }
     let allPressedKeys: string[] = [];
 
-    function watchKeys(event: Electron.Event, input: Electron.Input) {
+    function watchKeys(ev: KeyboardEvent) {
       const newPressed = hotkeys
         .getPressedKeyCodes()
         .map((value: number) => {
@@ -97,30 +95,19 @@ export default function KeybindConfig() {
       allPressedKeys = allPressedKeys.concat(newPressed);
       setPressedKeys(allPressedKeys);
 
-      event.preventDefault();
+      ev.preventDefault();
       return false;
     }
 
-    if (!window) {
-      const allWindows = remote.BrowserWindow.getAllWindows();
-      if (allWindows.length > 0) {
-        // use first window found
-        [window] = allWindows;
-      }
-    }
-    if (window) {
-      startWatching.current = () => {
-        window?.webContents.on('before-input-event', watchKeys);
-        setWatching(true);
-      };
-      stopWatching.current = () => {
-        window?.webContents.removeListener('before-input-event', watchKeys);
-        setWatching(false);
-        allPressedKeys = [];
-      };
-    } else {
-      console.log('GETTING WINDOW FAIL!');
-    }
+    startWatching.current = () => {
+      window.addEventListener('keydown', watchKeys, true);
+      setWatching(true);
+    };
+    stopWatching.current = () => {
+      window.removeEventListener('keydown', watchKeys, true);
+      setWatching(false);
+      allPressedKeys = [];
+    };
 
     // NOTE: IMPORANT! we need to call hotkeys at least once - even without any key binding
     // in order for getPresssedKeyCodes to work
