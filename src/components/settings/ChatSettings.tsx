@@ -1,6 +1,5 @@
 /* eslint-disable prettier/prettier */
 import React from 'react';
-import { ipcRenderer } from 'electron';
 import { Button, Grid, Typography } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
 import FormGroup from '@material-ui/core/FormGroup';
@@ -20,13 +19,13 @@ async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMis
   const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 
   // tell main process to start loopback server and open auth url in default browser
-  ipcRenderer.send('authLoopback', channelName);
+  window.electronAPI.startAuthLoopBack(channelName);
   if (!TWITCH_CLIENT_ID) {
     // main will warn with dialog box about missing client id and then stop
     return;
   }
 
-  ipcRenderer.on('receivedToken', () => {
+  window.electronAPI.onReceiveTwitchToken(() => {
     localStorage.setItem('twitchAuth', '1');
     // whether token is missing
     notifyChange(false);

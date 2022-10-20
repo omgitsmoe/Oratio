@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ) => void
   ) => ipcRenderer.on('updateEmoteMap', callback),
   importEmoteMapFromDisk: () => ipcRenderer.send('importEmoteMapFromDisk'),
+
+  startAuthLoopBack: (channel: string) =>
+    ipcRenderer.send('authLoopback', channel),
+
+  onReceiveTwitchToken: (callback: (event: IpcRendererEvent) => void) =>
+    ipcRenderer.on('receivedToken', callback),
 });
 
 // to get typing support
@@ -38,6 +44,12 @@ declare global {
       ) => void;
 
       importEmoteMapFromDisk: () => void;
+
+      startAuthLoopBack: (channel: string) => void;
+
+      onReceiveTwitchToken: (
+        callback: (event: IpcRendererEvent) => void
+      ) => void;
     };
   }
 }
