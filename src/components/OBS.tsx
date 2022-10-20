@@ -4,7 +4,37 @@ import * as ReactDOM from 'react-dom/client';
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
-import { Emote, emoteNameToUrl } from './Emotes';
+import { Emote } from './Emote';
+
+// TODO: can we get rid of this duplicated code?
+const emoteNameToUrl: { [key: string]: string } = {};
+const lowercaseToEmoteName: { [key: string]: string } = {};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function clearObject(obj: any) {
+  for (const k of Object.keys(obj)) {
+    delete obj[k];
+  }
+}
+
+async function loadEmoteLib() {
+  clearObject(emoteNameToUrl);
+  clearObject(lowercaseToEmoteName);
+
+  const emotes: { [name: string]: string } = JSON.parse(
+    localStorage.getItem('emoteNameToUrl') ?? '{}'
+  );
+  for (const [k, v] of Object.entries(emotes)) {
+    emoteNameToUrl[k] = v;
+  }
+
+  for (const emoteName of Object.keys(emoteNameToUrl)) {
+    lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
+  }
+}
+
+loadEmoteLib();
+// end @duplicate
 
 const DEFAULT_TIMEOUT = 4000;
 
@@ -190,7 +220,9 @@ function SpeechPhrase(props: any) {
           const emoteName = foundEmote[0];
           const emoteContainer = document.createElement('span');
           const root = ReactDOM.createRoot(emoteContainer);
-          root.render(<Emote emoteName={emoteName} />);
+          root.render(
+            <Emote emoteName={emoteName} emoteNameToUrl={emoteNameToUrl} />
+          );
           speechDisplay.current.appendChild(emoteContainer);
           i += emoteName.length;
         } else {
@@ -310,7 +342,7 @@ export default function OBS() {
   useEffect(() => {
     let runningId = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    window.electronAPI.onPhraseFromMain((_event: any, message: string) => {
+    window.mainToOBS.onPhraseFromMain((_event: any, message: string) => {
       const key: string = uniqueHash();
       dispatch({ type: 'push', phrase: { message, key, runningId } });
       runningId += 1;

@@ -97,9 +97,9 @@ const createWindow = async () => {
     icon: getAssetPath('icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
-      // TODO preload script and remove v
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: app.isPackaged
+        ? path.join(__dirname, 'preloadMain.js')
+        : path.join(__dirname, '../.erb/dll/preloadMain.js'),
     },
   });
 
@@ -112,6 +112,9 @@ const createWindow = async () => {
   } else {
     mainWindow.loadURL(`file://${__dirname}/index_injected.html#/home`);
   }
+
+  // TODO remove
+  mainWindow.webContents.openDevTools();
 
   /**
    * Add event listeners...
@@ -244,24 +247,42 @@ ipcMain.on('authLoopback', async (event, channelName) => {
   await twitch.setUpLoopback();
 });
 
+export function setTwitchAuth(wc: Electron.WebContents, state: boolean) {
+  wc.send('setTwitchAuth', state);
+}
+
+export async function getTwitchToken(
+  channelName: string | null
+): Promise<string | null> {
+  if (!channelName || channelName.length === 0) {
+    return null;
+  } else {
+    return keytar.getPassword('Oratio-Twitch', channelName);
+  }
+}
+
 // TODO: how long does getPassword usually take? should we use this as async?
 ipcMain.on('getTwitchToken', async (event, channelName: string) => {
-  if (!channelName || channelName.length === 0) {
-    event.returnValue = null;
-  } else {
-    event.returnValue = await keytar.getPassword('Oratio-Twitch', channelName);
-  }
+  event.returnValue = await getTwitchToken(channelName);
 });
+
+export async function getAzureKey(): Promise<string | null> {
+  return keytar.getPassword('Oratio-Azure', 'main');
+}
 
 ipcMain.on('getAzureKey', async (event) => {
-  event.returnValue = await keytar.getPassword('Oratio-Azure', 'main');
+  event.returnValue = await getAzureKey();
 });
+
+export async function setAzureKey(key: string) {
+  keytar.setPassword('Oratio-Azure', 'main', key);
+}
 
 ipcMain.on('setAzureKey', async (_event, key: string) => {
-  keytar.setPassword('Oratio-Azure', 'main', key);
+  setAzureKey(key);
 });
 
-ipcMain.handle('getTTSCache', async (_event) => {
+ipcMain.handle('getTTSCache', async () => {
   if (!cacheJSON) {
     await loadCacheFile();
     return cacheJSON;
@@ -291,9 +312,6 @@ ipcMain.on('openOBSWindow', () => {
         preload: app.isPackaged
           ? path.join(__dirname, 'preloadOBS.js')
           : path.join(__dirname, '../.erb/dll/preloadOBS.js'),
-        // NOTE: fixes module not defined error, but it shouldn't be needed
-        // since we only import electron renderer stuff
-        // sandbox: false,
       },
     });
 
@@ -306,6 +324,9 @@ ipcMain.on('openOBSWindow', () => {
     } else {
       obsWindow.loadURL(`file://${__dirname}/index_injected.html#/obs`);
     }
+
+    // TODO remove
+    obsWindow.webContents.openDevTools();
 
     obsWindow.on('closed', () => {
       obsWindow = undefined;
