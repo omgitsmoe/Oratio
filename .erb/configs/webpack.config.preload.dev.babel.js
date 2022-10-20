@@ -19,11 +19,14 @@ const configuration = {
 
   target: 'electron-preload',
 
-  entry: path.join(srcPath, 'preloadOBS.ts'),
+  entry: [
+    path.join(srcPath, 'preloadOBS.ts'),
+    path.join(srcPath, 'preloadMain.ts'),
+  ],
 
   output: {
     path: dllPath,
-    filename: 'preloadOBS.js',
+    filename: '[name].js',
     library: {
       type: 'umd',
     },

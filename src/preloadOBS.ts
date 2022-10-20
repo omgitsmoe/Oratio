@@ -1,17 +1,18 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  onPhraseFromMain: (callback: (event: any, phrase: string) => undefined) =>
-    ipcRenderer.on('phraseFromMain', callback),
+contextBridge.exposeInMainWorld('mainToOBS', {
+  onPhraseFromMain: (
+    callback: (event: IpcRendererEvent, phrase: string) => void
+  ) => ipcRenderer.on('phraseFromMain', callback),
 });
 
 // to get typing support
 declare global {
   interface Window {
-    electronAPI: {
+    mainToOBS: {
       onPhraseFromMain: (
-        callback: (event: any, phrase: string) => undefined
-      ) => undefined;
+        callback: (event: IpcRendererEvent, phrase: string) => void
+      ) => void;
     };
   }
 }

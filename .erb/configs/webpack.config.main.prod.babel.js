@@ -30,6 +30,7 @@ export default merge(baseConfig, {
     main: './src/main.dev.ts',
     // TODO not tested
     preloadOBS: path.join(webpackPaths.srcPath, 'preloadOBS.ts'),
+    preloadMain: path.join(webpackPaths.srcPath, 'preloadMain.ts'),
   },
 
   output: {

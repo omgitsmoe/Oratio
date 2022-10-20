@@ -28,7 +28,7 @@ import baseConfig, { getCSP } from './webpack.config.base';
 
    mode: 'production',
 
-   target: 'electron-renderer',
+   target: ['web', 'electron-renderer'],
 
    entry: [
      'core-js',

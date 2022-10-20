@@ -14,6 +14,11 @@ import enTranslations from './translations/en';
 import jaTranslations from './translations/ja';
 import deTranslations from './translations/de';
 
+// TODO: we need to remove all deps that rely on the node api from the renderer
+// if we want to get the best security (nodeIntegration: false, sandbox: true,
+// contextIsolation: true) and replace them with IPC calls
+// or make individual ones available in the preload script
+
 // export default class App extends React.Component {
 //   constructor(props: never) {
 //     super(props);
