@@ -20,7 +20,10 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "allowJs": true
+    "allowJs": true,
+    // to skip mismatching type declarations TS2717 when multiple
+    // versions are installed in node_modules
+    "skipLibCheck": true
   },
   "exclude": [
     "test",

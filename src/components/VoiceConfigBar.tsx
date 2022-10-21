@@ -60,7 +60,8 @@ export default function VoiceConfigBar(props: {
   // NOTE: we need to useEffect with voiceConfigs as dependency otherwise we will
   // get outdated values for voiceConfigs since the state of the closure
   // and the actual state will differ (could useRef for voiceConfigs otherwise)
-  const handleConfigLoadRef = useRef((name: string) => {});
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleConfigLoadRef = useRef((_name: string) => {});
   useEffect(() => {
     function handleConfigLoad(name: string) {
       const newConfig = voiceConfigs[name];
@@ -97,13 +98,13 @@ export default function VoiceConfigBar(props: {
       localStorage.getItem('ttsKeybindings') || '{}'
     );
     for (const [keys, configName] of Object.entries(keyBindings)) {
-      hotkeys(keys, (event, handler) => {
+      hotkeys(keys, () => {
         handleConfigLoadRef.current(configName);
         // don't prevent default event, since we allow hotkeys inside input fields now
       });
     }
 
-    hotkeys.filter = function (event) {
+    hotkeys.filter = function () {
       // const tag = event.target.tagName;
       // hotkeys.setScope(
       //   /^(INPUT|TEXTAREA|SELECT)$/.test(tag) ? 'input' : 'other'

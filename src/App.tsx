@@ -1,4 +1,3 @@
-import React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import './App.global.css';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
@@ -13,30 +12,6 @@ import TTSSettings from './components/TTSSettings';
 import enTranslations from './translations/en';
 import jaTranslations from './translations/ja';
 import deTranslations from './translations/de';
-
-// TODO: we need to remove all deps that rely on the node api from the renderer
-// if we want to get the best security (nodeIntegration: false, sandbox: true,
-// contextIsolation: true) and replace them with IPC calls
-// or make individual ones available in the preload script
-
-// export default class App extends React.Component {
-//   constructor(props: never) {
-//     super(props);
-//     this.state = {};
-//   }
-
-//   render() {
-//     return (
-//       <Router>
-//         <Switch>
-//           <Route path="/home" component={Home} />
-//           <Route path="/obs" component={OBS} />
-//           <Route path="/preferences" component={Preferences} />
-//         </Switch>
-//       </Router>
-//     );
-//   }
-// }\
 
 // Initialize i18n
 i18n

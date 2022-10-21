@@ -135,13 +135,11 @@ export default function TTSConfig(props: {
               <MUIMenuItem key="none" value="none">
                 none
               </MUIMenuItem>
-              {Object.entries(voiceStyles).map(
-                ([name, _description]: [string, string]) => (
-                  <MUIMenuItem key={name} value={name}>
-                    {name}
-                  </MUIMenuItem>
-                )
-              )}
+              {Object.entries(voiceStyles).map(([name]: [string, string]) => (
+                <MUIMenuItem key={name} value={name}>
+                  {name}
+                </MUIMenuItem>
+              ))}
             </Select>
           </FormControl>
         </Grid>
@@ -168,10 +166,10 @@ export default function TTSConfig(props: {
               min={-100}
               max={100}
               step={1}
-              onChange={(event, value) => {
+              onChange={(_event, value) => {
                 setTempVoicePitch(value as number);
               }}
-              onChangeCommitted={(event, value) => {
+              onChangeCommitted={(_event, value) => {
                 onPitchChange(value as number);
               }}
               icon={<WavesIcon />}
@@ -184,10 +182,10 @@ export default function TTSConfig(props: {
               min={0}
               max={3}
               step={0.01}
-              onChange={(event, value) => {
+              onChange={(_event, value) => {
                 setTempVoiceRate(value as number);
               }}
-              onChangeCommitted={(event, value) => {
+              onChangeCommitted={(_event, value) => {
                 onRateChange(value as number);
               }}
               icon={<SpeedIcon />}

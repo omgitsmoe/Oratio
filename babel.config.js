@@ -35,7 +35,7 @@ module.exports = (api) => {
         },
       ],
       require('@babel/preset-typescript'),
-      [require('@babel/preset-react'), { development }],
+      [require('@babel/preset-react'), { development, runtime: 'automatic' }],
     ],
     plugins: [
       // Stage 0
