@@ -29,54 +29,14 @@ const serverConfig = {
     modules: [
       path.join(__dirname, 'src/server'),
       path.resolve(__dirname, 'node_modules'),
-    ], // 'node_modules'],
+    ],
   },
   module: {
     rules: [
-      // {
-      //   test: /\.[jt]sx?$/,
-      //   loader: 'babel-loader',
-      //   // exclude node_modules so we don't transpile core-js with babel
-      //   // exclude: /node_modules/,
-      //   exclude: [/\bcore-js\b/, /\bwebpack\/buildin\b/],
-      //   options: {
-      //     // modules: cjs basically does the same as plugin-transform-modules-commonjs
-      //     presets: [
-      //       [
-      //         '@babel/preset-env',
-      //         // {
-      //         //   modules: 'cjs',
-      //         //   useBuiltIns: 'usage',
-      //         //   corejs: '3.10.1',
-      //         // },
-      //       ],
-      //       '@babel/preset-typescript',
-      //       '@babel/preset-react',
-      //     ],
-      //     // plugins: [
-      //     //   // transforms import/export to require etc. but fails at runtime:
-      //     //   // Error: Cannot find module './objectWithoutPropertiesLoose.js'
-      //     //   '@babel/plugin-transform-modules-commonjs',
-      //     //   '@babel/plugin-transform-runtime',
-      //     //   '@babel/plugin-proposal-export-default-from',
-      //     // ],
-      //     targets: { node: '12.18' },
-      //     // allows import/export if present otherwise treated as script -> does not work
-      //     sourceType: 'module',
-      //   },
-      // },
-      {
-        test: /\.tsx?$/,
-        loader: 'babel-loader',
-        exclude: /node_modules/,
-      },
       {
         test: /\.[jt]sx?$/,
-        include: [/node_modules(.*[/\\])+errlop/],
         loader: 'babel-loader',
-        options: {
-          plugins: ['@babel/plugin-transform-modules-commonjs'],
-        },
+        exclude: /node_modules/,
       },
     ],
   },
@@ -112,10 +72,12 @@ const clientConfig = {
       {
         test: /\.[jt]sx?$/,
         loader: 'babel-loader',
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/i,
         use: ['style-loader', 'css-loader'],
+        exclude: /node_modules/,
       },
     ],
   },

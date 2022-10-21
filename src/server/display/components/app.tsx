@@ -302,7 +302,6 @@ type State = {
   settings: { [name: string]: any };
 };
 
-// TODO keep SpeechSynthesizer alive between calls? but then onAudioEnd does not work
 export default function App() {
   // state will only update on a re-render...
   const stateRef: React.MutableRefObject<State> = useRef({
