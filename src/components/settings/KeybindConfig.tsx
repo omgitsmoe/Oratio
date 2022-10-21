@@ -119,6 +119,11 @@ export default function KeybindConfig() {
       const configMap: VoiceConfigMap = JSON.parse(configs);
       setConfigNames(Object.keys(configMap));
     }
+
+    // NOTE: make sure to remove the keydown event listener when dismounting
+    return () => {
+      if (stopWatching.current) stopWatching.current();
+    };
   }, []);
 
   return (
