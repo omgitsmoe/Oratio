@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { FormControl, InputLabel, MenuItem, Select } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
-import * as fs from 'fs';
 import * as Theme from '../Theme';
 
 const theme = Theme.default();
@@ -16,23 +15,17 @@ const useStyles = makeStyles(() =>
   })
 );
 
-const options: string[] = [];
-const assetLoc =
-  process.env.NODE_ENV === 'development'
-    ? 'assets/sounds'
-    : 'resources/assets/sounds';
-fs.readdir(assetLoc, (err: Error | null, files: string[]) => {
-  if (err) {
-    throw err;
-  }
-  files.forEach((file: string) => {
-    options.push(file);
-  });
-});
-
 export default function AudioSelector() {
   const { t } = useTranslation();
   const [sound, setSound] = React.useState('');
+  const [soundOptions, setSoundOptions] = React.useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      setSoundOptions(await window.electronAPI.getDirListingSounds());
+      setSound(localStorage.getItem('soundFileName') || '');
+    })();
+  }, []);
 
   const handleSoundChange = (event: React.ChangeEvent<{ value: unknown }>) => {
     setSound(event.target.value as string);
@@ -53,7 +46,7 @@ export default function AudioSelector() {
           autoWidth
           onChange={handleSoundChange}
         >
-          {options.map((option) => (
+          {soundOptions.map((option) => (
             <MenuItem key={option} value={option}>
               {option}
             </MenuItem>

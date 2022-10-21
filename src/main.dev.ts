@@ -19,13 +19,22 @@ import {
   globalShortcut,
   ipcMain,
   dialog,
+  IpcMainEvent,
+  IpcMainInvokeEvent,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import keytar from 'keytar';
 import * as fs from 'fs';
+import openExplorer from 'open-file-explorer';
 import MenuBuilder from './menu';
 import TwitchAuth from './TwitchAuth';
+import {
+  downloadEmotes,
+  updateEmoteMap,
+  importEmoteLibFromDisk,
+  exportEmoteLib,
+} from './EmoteLib';
 
 export default class AppUpdater {
   constructor() {
@@ -261,17 +270,30 @@ export async function getTwitchToken(
   }
 }
 
+ipcMain.handle(
+  'getTwitchToken',
+  async (
+    _event: IpcMainInvokeEvent,
+    channelName: string
+  ): Promise<string | null> => {
+    return getTwitchToken(channelName);
+  }
+);
+
 // TODO: how long does getPassword usually take? should we use this as async?
-ipcMain.on('getTwitchToken', async (event, channelName: string) => {
-  event.returnValue = await getTwitchToken(channelName);
-});
+ipcMain.on(
+  'getTwitchTokenSync',
+  async (event: IpcMainEvent, channelName: string) => {
+    event.returnValue = await getTwitchToken(channelName);
+  }
+);
 
 export async function getAzureKey(): Promise<string | null> {
   return keytar.getPassword('Oratio-Azure', 'main');
 }
 
-ipcMain.on('getAzureKey', async (event) => {
-  event.returnValue = await getAzureKey();
+ipcMain.handle('getAzureKey', async () => {
+  return getAzureKey();
 });
 
 export async function setAzureKey(key: string) {
@@ -308,10 +330,9 @@ ipcMain.on('openOBSWindow', () => {
       // focusable: false,
       // transparent: true,
       webPreferences: {
-        // preload script and only expose the speechFromMain ipc channel
         preload: app.isPackaged
-          ? path.join(__dirname, 'preloadOBS.js')
-          : path.join(__dirname, '../.erb/dll/preloadOBS.js'),
+          ? path.join(__dirname, 'preloadMain.js')
+          : path.join(__dirname, '../.erb/dll/preloadMain.js'),
       },
     });
 
@@ -337,3 +358,37 @@ ipcMain.on('openOBSWindow', () => {
 ipcMain.on('sendSpeechOBSWindow', (_event, phrase: string) => {
   if (obsWindow) obsWindow.webContents.send('phraseFromMain', phrase);
 });
+
+ipcMain.on(
+  'openFileExplorer',
+  async (_event: IpcMainEvent, openPath: string) => {
+    openExplorer(openPath);
+  }
+);
+
+const soundsDir =
+  process.env.NODE_ENV === 'development'
+    ? 'assets/sounds'
+    : 'resources/assets/sounds';
+
+ipcMain.handle('getDirListingSounds', async (): Promise<string[]> => {
+  return fs.readdirSync(soundsDir);
+});
+
+ipcMain.on('downloadEmotes', downloadEmotes);
+
+ipcMain.on('importEmoteMapFromDisk', async (event: IpcMainEvent) => {
+  const emoteMap = await importEmoteLibFromDisk();
+  if (emoteMap) updateEmoteMap(event.sender, emoteMap, false);
+});
+
+ipcMain.handle(
+  'exportEmoteMap',
+  async (
+    _event: IpcMainInvokeEvent,
+    emoteMap: { [key: string]: string }
+  ): Promise<boolean> => {
+    const success = await exportEmoteLib(emoteMap);
+    return success;
+  }
+);

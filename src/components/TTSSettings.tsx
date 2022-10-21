@@ -1,4 +1,3 @@
-import { ipcRenderer } from 'electron';
 import React, { useEffect } from 'react';
 import {
   makeStyles,
@@ -280,11 +279,13 @@ export default function TTSSettings() {
     }
   }
   useEffect(() => {
-    const apiKey = ipcRenderer.sendSync('getAzureKey');
-    // eslint-disable-next-line eqeqeq
-    if (apiKey != undefined && apiKey !== '') {
-      setAzureApiKey(apiKey);
-    }
+    (async () => {
+      const apiKey = await window.electronAPI.getAzureKey();
+      // eslint-disable-next-line eqeqeq
+      if (apiKey != undefined && apiKey !== '') {
+        setAzureApiKey(apiKey);
+      }
+    })();
   }, []);
 
   return (
@@ -308,7 +309,7 @@ export default function TTSSettings() {
                     setApiKeyErrorMessage('Invalid API key');
                   } else {
                     setApiKeyErrorMessage('');
-                    ipcRenderer.send('setAzureKey', trimmed);
+                    window.electronAPI.sendAzureKey(trimmed);
                   }
                   setAzureApiKey(trimmed);
                 }}
@@ -465,7 +466,7 @@ export default function TTSSettings() {
           </Grid>
           <Grid container direction="row" spacing={3}>
             <Grid item xs={12}>
-              <KeybindConfig />
+              {<KeybindConfig />}
             </Grid>
           </Grid>
           <Grid
