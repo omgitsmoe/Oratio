@@ -35,10 +35,10 @@ export default merge(baseConfig, {
   },
 
   output: {
-    library: 'renderer',
     path: dist,
     filename: '[name].dev.dll.js',
     library: {
+      name: 'renderer',
       type: 'var',
     },
   },

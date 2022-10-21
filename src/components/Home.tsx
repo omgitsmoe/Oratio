@@ -14,7 +14,6 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { red, green } from '@material-ui/core/colors';
-import { ipcRenderer } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import * as Theme from './Theme';
@@ -76,15 +75,24 @@ const useStyles = makeStyles(() =>
 );
 
 async function handleOpenObs() {
-  ipcRenderer.send('openOBSWindow');
+  window.electronAPI.openOBSWindow();
 }
 
 const localStorageVoiceStyle = 'ttsVoiceStyle';
 const localStorageVoicePitch = 'ttsVoicePitch';
 const localStorageVoiceRate = 'ttsVoiceRate';
 
+const channelName = localStorage.getItem('channelName');
+const oAuthToken = (() => {
+  if (!channelName) {
+    return null;
+  }
+  const token = window.electronAPI.getTwitchTokenSync(channelName);
+  return token;
+})();
+
 const chat: ChatInteraction = new ChatInteraction(
-  localStorage.getItem('channelName'),
+  channelName,
   null,
   process.env.TWITCH_CLIENT_ID || null,
   {
@@ -168,13 +176,6 @@ export default function Home() {
     localStorage.setItem(localStorageVoiceRate, value.rate.toString());
   }
 
-  const channelName = useRef(localStorage.getItem('channelName'));
-  // useState AND useRef initialState argument is run on EVERY render!!! (it's executed but disregarded)
-  // -> pass a function to use lazy initialization which is only run on the initial render
-  const [oAuthToken] = React.useState(() => {
-    return ipcRenderer.sendSync('getTwitchToken', channelName.current);
-  });
-
   // wrap in a ref so a re-render doesn't delete our history
   const textHistory: React.MutableRefObject<string[]> = useRef([]);
   const textHistoryPos: React.MutableRefObject<number> = useRef(
@@ -223,7 +224,7 @@ export default function Home() {
       }
 
       // send to OBS window, which will forward it to the OBS window if open
-      ipcRenderer.send('sendSpeechOBSWindow', phrase);
+      window.electronAPI.sendPhraseOBSWindow(phrase);
 
       // play TTS
       if (ttsActive && tts.current !== null) {
@@ -265,63 +266,59 @@ export default function Home() {
   useEffect(() => {
     // currently this component only really udpates after the user comes back
     // from the preferences page so it's fine to have this here for now
-    chat.updateIdentity(channelName.current, oAuthToken);
+    chat.updateIdentity(channelName, oAuthToken);
     chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
     chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
 
-    // these can't change between renders
-    const ttsSettings: TTSSettings = {
-      apiKey: ipcRenderer.sendSync('getAzureKey') || '',
-      region: localStorage.getItem('azureRegion') || '',
-      skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
-    };
+    async function initTTS() {
+      // these can't change between renders
+      const ttsSettings: TTSSettings = {
+        apiKey: (await window.electronAPI.getAzureKey()) || '',
+        region: localStorage.getItem('azureRegion') || '',
+        skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
+      };
 
-    if (ttsSettings.apiKey && ttsSettings.region) {
-      setTtsHasAuth(true);
-      // TODO add capacity option in tts settings
-      tts.current = new AzureTTS(ttsSettings);
+      if (ttsSettings.apiKey && ttsSettings.region) {
+        setTtsHasAuth(true);
+        // TODO add capacity option in tts settings
+        tts.current = new AzureTTS(ttsSettings);
 
-      const cacheCap = parseInt(
-        localStorage.getItem(localStorageCacheLimit) || '500',
-        10
-      );
-      if (cacheCap > 0) {
-        // request cache from main thread
-        ipcRenderer
-          .invoke('getTTSCache')
-          .then((result) => {
-            if (tts.current) {
-              console.log('cache set');
-              tts.current.cache = TTSCache.fromJSON(result);
-              if (tts.current.cache) {
-                tts.current.cache.updateCapacity(cacheCap);
-              }
-              return null;
+        const cacheCap = parseInt(
+          localStorage.getItem(localStorageCacheLimit) || '500',
+          10
+        );
+        if (tts.current && cacheCap > 0) {
+          // request cache from main thread
+          const cacheJSON = await window.electronAPI.getTTSCache();
+          console.log('cache set');
+          if (cacheJSON) {
+            tts.current.cache = TTSCache.fromJSON(cacheJSON);
+            if (tts.current.cache) {
+              tts.current.cache.updateCapacity(cacheCap);
             }
+          }
+        }
 
-            return null;
-          })
-          .catch((err) => {
-            console.error(err);
-          });
+        if (ttsActive) {
+          tts.current.open();
+        }
+      } else {
+        setTTSActive(false);
       }
-
-      if (ttsActive) {
-        tts.current.open();
-      }
-    } else {
-      setTTSActive(false);
     }
+
+    initTTS();
 
     return () => {
       if (tts.current) {
         tts.current.close();
         if (tts.current.cache) {
           // send updated cache data to main thread
-          ipcRenderer.send('updateTTSCache', tts.current.cache.toJSON());
+          window.electronAPI.updateTTSCache(tts.current.cache.toJSON());
         }
       }
     };
+    // ttsActive not included in deps array since we have a sep function for handling that
   }, []);
 
   // Tab-complete
@@ -502,7 +499,7 @@ export default function Home() {
           {(chat.mirrorFromChat || chat.mirrorToChat) && (
             <ChatStatus
               chatInstance={chat}
-              channelName={channelName.current}
+              channelName={channelName}
               oAuthToken={oAuthToken}
             />
           )}

@@ -53,6 +53,9 @@ export default merge(baseConfig, {
   output: {
     publicPath: `http://localhost:${port}/dist/`,
     filename: 'renderer.dev.js',
+    library: {
+      type: 'umd',
+    },
   },
 
   module: {

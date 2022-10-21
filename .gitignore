@@ -37,7 +37,7 @@ assets/cache.json
 release
 src/main.prod.js
 src/main.prod.js.map
-src/preloadOBS.js
+src/preloadMain.js
 src/renderer.prod.js
 src/renderer.prod.js.map
 src/style.css

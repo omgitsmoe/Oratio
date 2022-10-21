@@ -1,4 +1,4 @@
-import { ipcMain, IpcMainEvent } from 'electron';
+import { IpcMainEvent } from 'electron';
 import * as https from 'https';
 import * as fs from 'fs';
 import TwitchApi, { Emote as EmoteCommon } from './TwitchApi';
@@ -10,14 +10,15 @@ const assetLoc =
     : 'resources/assets/emotes';
 export const emoteLibPath = `${assetLoc}/emotes.json`;
 
-function updateEmoteMap(
+export function updateEmoteMap(
   wc: Electron.WebContents,
-  emoteNameToUrl: { [key: string]: string }
+  emoteNameToUrl: { [key: string]: string },
+  writeToDisk: boolean
 ) {
-  wc.send('updateEmoteMap', emoteNameToUrl);
+  wc.send('updateEmoteMap', emoteNameToUrl, writeToDisk);
 }
 
-async function importEmoteLibFromDisk(): Promise<
+export async function importEmoteLibFromDisk(): Promise<
   { [key: string]: string } | undefined
 > {
   const emoteNameToUrl: { [key: string]: string } = {};
@@ -39,12 +40,7 @@ async function importEmoteLibFromDisk(): Promise<
   return emoteNameToUrl;
 }
 
-ipcMain.on('importEmoteMapFromDisk', async (event: IpcMainEvent) => {
-  const emoteMap = await importEmoteLibFromDisk();
-  if (emoteMap) updateEmoteMap(event.sender, emoteMap);
-});
-
-async function exportEmoteLib(emoteNameToUrl: {
+export async function exportEmoteLib(emoteNameToUrl: {
   [key: string]: string;
 }): Promise<boolean> {
   fs.mkdirSync(assetLoc, { recursive: true });
@@ -55,6 +51,13 @@ async function exportEmoteLib(emoteNameToUrl: {
   }
 
   return true;
+}
+
+function mergeEmoteMap(
+  wc: Electron.WebContents,
+  emoteNameToUrl: { [key: string]: string }
+) {
+  wc.send('mergeEmoteMap', emoteNameToUrl);
 }
 
 /**
@@ -143,129 +146,127 @@ function reportEmoteProgress(
   wc.send('emoteDownloadProgress', type, message);
 }
 
-ipcMain.on(
-  'downloadEmotes',
-  async (event: IpcMainEvent, channel: string, global?: boolean) => {
-    try {
-      const authToken = await getTwitchToken(channel);
-      if (authToken === null) {
-        reportEmoteProgress(
-          event.sender,
-          'error',
-          'Could not get authorization! Re-authorization needed!'
-        );
-        return;
-      }
-
-      const tw = new TwitchApi(
-        // button can't be pressed if either of these are null
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        TWITCH_CLIENT_ID!,
-        authToken,
-        // callback for when we get a 401: Unauthorized response
-        () => {
-          setTwitchAuth(event.sender, false);
-        }
+export async function downloadEmotes(
+  event: IpcMainEvent,
+  authorizedChannel: string,
+  channel: string | null,
+  global: boolean
+) {
+  try {
+    const authToken = await getTwitchToken(authorizedChannel);
+    if (authToken === null) {
+      reportEmoteProgress(
+        event.sender,
+        'error',
+        'Could not get authorization! Re-authorization needed!'
       );
-
-      // also checked by canGetEmotes
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const userId = global ? null : await tw.getUserId(channel);
-      if (userId === null && !global) {
-        reportEmoteProgress(
-          event.sender,
-          'error',
-          'Could not retrieve user id from twitch servers!'
-        );
-        return;
-      }
-
-      const allEmotes: [groupName: string, emotes: EmoteCommon[]][] = [];
-      // get all emotes of current user
-      if (channel === null) {
-        // get EmoteGroups object and convert it to [groupName, emotes] using
-        // Object.entries
-        if (global === true) {
-          allEmotes.push(...Object.entries(await tw.getGlobalEmotes()));
-        } else {
-          // will not be null see the if right after userId
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          allEmotes.push(...Object.entries(await tw.getChannelEmotes(userId!)));
-        }
-      } else {
-        allEmotes.push(
-          // will not be null see the if right after userId
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          ...Object.entries(await tw.getTwitchChannelEmotesConverted(userId!))
-        );
-      }
-
-      const agent = new https.Agent({ maxSockets: 25 });
-      const promises: Promise<[EmoteCommon, string]>[] = [];
-      for (const [groupName, emotes] of allEmotes) {
-        let newGroupName = groupName;
-        if (groupName.endsWith('Channel')) {
-          // Channel 7 chars
-          const channelStartIndex = groupName.length - 7;
-          newGroupName = `${channel}_${groupName.slice(0, channelStartIndex)}`;
-        }
-        // eslint-disable-next-line no-await-in-loop
-        promises.push(...(await fetchEmotes(newGroupName, emotes, agent)));
-      }
-      if (promises.length === 0) {
-        reportEmoteProgress(
-          event.sender,
-          'error',
-          'Error: Emote APIs returned no emotes!'
-        );
-        return;
-      }
-
-      let numFinished = 0;
-      const progressUpdate = (message: string) => {
-        reportEmoteProgress(
-          event.sender,
-          'progress',
-          `[${numFinished}/${promises.length}] ${message}`
-        );
-      };
-      progressUpdate('Started downloads...');
-      const emoteNameToUrl: { [key: string]: string } = {};
-      // const lowercaseToEmoteName: { [key: string]: string } = {};
-
-      await Promise.all(
-        promises.map((p) =>
-          p.then((data) => {
-            const [emote, filePathWithExtension] = data;
-            numFinished += 1;
-            progressUpdate(emote.name);
-
-            // add to emote map
-            // html paths are relative to resources/app.asar that's why we
-            // need '../'
-            // node/electron paths though are relative to the exe which is
-            // where 'resources' lives as well
-            // so filePathWithExtension currently is the electron path and
-            // now we need to remove 'resources' from the url (not in a dev env though)
-            // and add '../'
-            emoteNameToUrl[emote.name] = `../${encodeURI(
-              filePathWithExtension.replace(/^resources\//, '')
-            )}`;
-            // lowercaseToEmoteName[emote.name.toLowerCase()] = emote.name;
-            return null;
-          })
-        )
-      );
-
-      if (await exportEmoteLib(emoteNameToUrl)) {
-        progressUpdate('Exported emote lib!');
-      } else {
-        progressUpdate('Failed to export emote lib!');
-      }
-
-      updateEmoteMap(event.sender, emoteNameToUrl);
-    } catch (err) {
-      reportEmoteProgress(event.sender, 'error', `Error: ${err}`);
+      return;
     }
+
+    const tw = new TwitchApi(
+      // button can't be pressed if either of these are null
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      TWITCH_CLIENT_ID!,
+      authToken,
+      // callback for when we get a 401: Unauthorized response
+      () => {
+        setTwitchAuth(event.sender, false);
+      }
+    );
+
+    // also checked by canGetEmotes
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const userId = global
+      ? null
+      : await tw.getUserId(channel ?? authorizedChannel);
+    if (userId === null && !global) {
+      reportEmoteProgress(
+        event.sender,
+        'error',
+        'Could not retrieve user id from twitch servers!'
+      );
+      return;
+    }
+
+    const allEmotes: [groupName: string, emotes: EmoteCommon[]][] = [];
+    // get all emotes of current user
+    if (channel === null) {
+      // get EmoteGroups object and convert it to [groupName, emotes] using
+      // Object.entries
+      if (global === true) {
+        allEmotes.push(...Object.entries(await tw.getGlobalEmotes()));
+      } else {
+        // will not be null see the if right after userId
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        allEmotes.push(...Object.entries(await tw.getChannelEmotes(userId!)));
+      }
+    } else {
+      allEmotes.push(
+        // will not be null see the if right after userId
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        ...Object.entries(await tw.getTwitchChannelEmotesConverted(userId!))
+      );
+    }
+
+    const agent = new https.Agent({ maxSockets: 25 });
+    const promises: Promise<[EmoteCommon, string]>[] = [];
+    for (const [groupName, emotes] of allEmotes) {
+      let newGroupName = groupName;
+      if (groupName.endsWith('Channel')) {
+        // Channel 7 chars
+        const channelStartIndex = groupName.length - 7;
+        newGroupName = `${channel}_${groupName.slice(0, channelStartIndex)}`;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      promises.push(...(await fetchEmotes(newGroupName, emotes, agent)));
+    }
+    if (promises.length === 0) {
+      reportEmoteProgress(
+        event.sender,
+        'error',
+        'Error: Emote APIs returned no emotes!'
+      );
+      return;
+    }
+
+    let numFinished = 0;
+    const progressUpdate = (message: string) => {
+      reportEmoteProgress(
+        event.sender,
+        'progress',
+        `[${numFinished}/${promises.length}] ${message}`
+      );
+    };
+    progressUpdate('Started downloads...');
+    const emoteNameToUrl: { [key: string]: string } = {};
+    // const lowercaseToEmoteName: { [key: string]: string } = {};
+
+    await Promise.all(
+      promises.map((p) =>
+        p.then((data) => {
+          const [emote, filePathWithExtension] = data;
+          numFinished += 1;
+          progressUpdate(emote.name);
+
+          // add to emote map
+          // html paths are relative to resources/app.asar that's why we
+          // need '../'
+          // node/electron paths though are relative to the exe which is
+          // where 'resources' lives as well
+          // so filePathWithExtension currently is the electron path and
+          // now we need to remove 'resources' from the url (not in a dev env though)
+          // and add '../'
+          emoteNameToUrl[emote.name] = `../${encodeURI(
+            filePathWithExtension.replace(/^resources\//, '')
+          )}`;
+          // lowercaseToEmoteName[emote.name.toLowerCase()] = emote.name;
+          return null;
+        })
+      )
+    );
+
+    mergeEmoteMap(event.sender, emoteNameToUrl);
+  } catch (err) {
+    reportEmoteProgress(event.sender, 'error', `Error: ${err}`);
   }
-);
+}

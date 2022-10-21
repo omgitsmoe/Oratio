@@ -42,7 +42,6 @@
       "index_injected.html",
       "main.prod.js",
       "main.prod.js.map",
-      "preloadOBS.js",
       "preloadMain.js",
       "package.json"
     ],

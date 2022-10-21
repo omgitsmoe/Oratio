@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import {
   makeStyles,
@@ -10,7 +10,6 @@ import TextField from '@material-ui/core/TextField';
 import red from '@material-ui/core/colors/red';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import openExplorer from 'open-file-explorer';
 import * as Theme from './Theme';
 import { Emote } from './Emote';
 
@@ -31,6 +30,16 @@ function clearObject(obj: any) {
   }
 }
 
+function mergeEmotes(other: { [key: string]: string }) {
+  for (const [k, v] of Object.entries(other)) {
+    emoteNameToUrl[k] = v;
+  }
+
+  for (const emoteName of Object.keys(emoteNameToUrl)) {
+    lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
+  }
+}
+
 function loadEmoteLib() {
   clearObject(emoteNameToUrl);
   clearObject(lowercaseToEmoteName);
@@ -38,13 +47,7 @@ function loadEmoteLib() {
   const emotes: { [name: string]: string } = JSON.parse(
     localStorage.getItem('emoteNameToUrl') ?? '{}'
   );
-  for (const [k, v] of Object.entries(emotes)) {
-    emoteNameToUrl[k] = v;
-  }
-
-  for (const emoteName of Object.keys(emoteNameToUrl)) {
-    lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
-  }
+  mergeEmotes(emotes);
 }
 
 (async () => {
@@ -129,7 +132,7 @@ export default function Emotes() {
   }
 
   function openEmoteDirectory() {
-    openExplorer(assetLoc);
+    window.electronAPI.openFileExplorer(assetLoc);
   }
 
   const [, updateState] = React.useState<Record<string, never>>();
@@ -139,7 +142,6 @@ export default function Emotes() {
   // -> use process.env.TWITCH_CLIENT_ID directly instead
   // eslint-disable-next-line prefer-destructuring
   const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
-  console.log('EMOTS:', TWITCH_CLIENT_ID);
   // users can only change this by going back to maing settings so only
   // refreshing it here is fine;
   const hasAuth = localStorage.getItem('twitchAuth') === '1';
@@ -156,9 +158,11 @@ export default function Emotes() {
   const [importStateGlobal, setImportStateGlobal] = React.useState<string>('');
   const [importStateChannel, setImportStateChannel] =
     React.useState<string>('');
+  const setState: React.MutableRefObject<(state: string) => void | null> =
+    React.useRef(setImportState);
   async function downloadAvailableEmotes(
     channel: string | null,
-    global?: boolean
+    global: boolean
   ) {
     // channel === null -> we get all available emotes for the current user
     // otherwise we only get the twitch emotes of that channel
@@ -167,36 +171,66 @@ export default function Emotes() {
     }
 
     // select correct state setting function
-    let setState: (value: string) => void;
     if (!global) {
-      setState = channel === null ? setImportState : setImportStateChannel;
+      setState.current =
+        channel === null ? setImportState : setImportStateChannel;
     } else {
-      setState = setImportStateGlobal;
+      setState.current = setImportStateGlobal;
     }
 
     if (!canGetEmotes) {
-      setState("Missing authorization! Can't start emote download!");
+      setState.current("Missing authorization! Can't start emote download!");
       return;
     }
 
+    setState.current('Import started');
+    window.electronAPI.startEmoteDownload(channelName, channel, global);
+  }
+
+  useEffect(() => {
+    // do this here, so we don't have multiple event listeners
     window.electronAPI.onEmoteDownloadProgress(
       (_event, _type: string, message: string) => {
-        setState(message);
+        setState.current(message);
       }
     );
 
-    setState('Import started');
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    window.electronAPI.startEmoteDownload(channel ?? channelName!, global);
-  }
+    // here the entire map gets replaced
+    window.electronAPI.onUpdateEmoteMap(
+      async (
+        _event,
+        emoteMap: { [key: string]: string },
+        writeToDisk: boolean
+      ) => {
+        localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteMap));
+        loadEmoteLib();
 
-  window.electronAPI.onUpdateEmoteMap(
-    (_event, emoteMap: { [key: string]: string }) => {
-      localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteMap));
-      loadEmoteLib();
-      forceUpdate();
-    }
-  );
+        if (writeToDisk === false) {
+          forceUpdate();
+          return;
+        }
+
+        if (await window.electronAPI.exportEmoteMap(emoteNameToUrl)) {
+          setState.current('Exported emote lib!');
+        } else {
+          setState.current('Failed to export emote lib!');
+        }
+      }
+    );
+
+    // here emotes get added and existing ones get replaced
+    window.electronAPI.onMergeEmoteMap(
+      async (_event, emoteMap: { [key: string]: string }) => {
+        mergeEmotes(emoteMap);
+        localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteNameToUrl));
+        if (await window.electronAPI.exportEmoteMap(emoteNameToUrl)) {
+          setState.current('Exported emote lib!');
+        } else {
+          setState.current('Failed to export emote lib!');
+        }
+      }
+    );
+  }, []);
 
   const element = (
     <MuiThemeProvider theme={theme}>
@@ -352,7 +386,7 @@ export default function Emotes() {
                 color="primary"
                 disabled={!canGetEmotes || !channelEmotes.valid}
                 onClick={() => {
-                  downloadAvailableEmotes(channelEmotes.value);
+                  downloadAvailableEmotes(channelEmotes.value, false);
                 }}
               >
                 {canGetEmotes ? t('Add Emotes!') : t('Not authorized!')}
