@@ -337,7 +337,7 @@ export class AzureTTS {
   static arrayBufferToBase64(buffer: ArrayBuffer): string {
     let binary = '';
     const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
+    // const len = bytes.byteLength;
     for (const byte of bytes) {
       binary += String.fromCharCode(byte);
     }
@@ -375,7 +375,7 @@ export class AzureTTS {
     }
 
     // TODO can the default audio format (mp3) change without changing the sdk version?
-    const sound = new Howl({
+    new Howl({
       src,
       autoplay: true,
       onend: () => {

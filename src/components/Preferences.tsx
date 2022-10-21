@@ -70,7 +70,7 @@ export default function Preferences() {
   );
 
   const handleVolumeChange = (
-    event: React.ChangeEvent<unknown>,
+    _event: React.ChangeEvent<unknown>,
     newValue: number | number[]
   ) => {
     setVolume(newValue as number);
@@ -82,7 +82,7 @@ export default function Preferences() {
   );
 
   const handleTextSpeedChange = (
-    event: React.ChangeEvent<unknown>,
+    _event: React.ChangeEvent<unknown>,
     newValue: number | number[]
   ) => {
     setTextSpeed(newValue as number);
@@ -94,7 +94,7 @@ export default function Preferences() {
   );
 
   const handelFontSizeChange = (
-    event: React.ChangeEvent<unknown>,
+    _event: React.ChangeEvent<unknown>,
     newValue: number | number[]
   ) => {
     setTextSize(newValue as number);

@@ -11,6 +11,8 @@ module.exports = {
     //     "code": 400,
     //   },
     // ],
+    'react/jsx-uses-react': 'off',
+    'react/react-in-jsx-scope': 'off',
     'no-restricted-syntax': [
       // Allow ForOfStatement as it's useful and the reason for exclusion doesn't apply.
       'error',
