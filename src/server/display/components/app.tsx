@@ -126,7 +126,6 @@ function SpeechPhrase(props: any) {
   const { fontColor } = settings;
   const { fontWeight } = settings;
   const { soundFileName } = settings;
-  emoteNameToUrl = settings.emoteNameToUrl;
 
   const speechSound = new Howl({
     src: [`../assets/sounds/${soundFileName}`],
@@ -387,10 +386,12 @@ export default function App(props: { collab: boolean }) {
 
   useEffect(() => {
     let runningId = 0;
+    // TODO
     const eventName = collab ? 'collabPhraseRender' : 'phraseRender';
     console.log('ws listen on', eventName);
     socket.on(eventName, (data) => {
       const key: string = uniqueHash();
+      // TODO
       const message: string = collab ? 'from collab: ' + data.phrase : data.phrase;
       dispatch({
         type: 'push',
@@ -400,6 +401,12 @@ export default function App(props: { collab: boolean }) {
 
       runningId += 1;
     });
+
+    socket.on('updateEmoteMapClient', (data) => {
+      console.log('collab', collab, 'updating emote map');
+      if (data.emoteNameToUrl) emoteNameToUrl = data.emoteNameToUrl;
+    });
+
     return () => {
       socket.disconnect();
     };

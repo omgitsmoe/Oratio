@@ -222,10 +222,6 @@ export default function Home() {
             : parseFloat(localStorage.getItem(constants.lsVolumeName) || '50') /
               100,
           bubbleColor: localStorage.getItem(constants.lsBubbleColor) || '#000',
-          // TODO: don't send this every time
-          emoteNameToUrl: JSON.parse(
-            localStorage.getItem(constants.lsEmoteMap) || '{}'
-          ),
         },
       });
       // post the same message in twitch chat
@@ -289,6 +285,13 @@ export default function Home() {
       localStorage.getItem(constants.lsMirrorFromChat) === '1';
     chat.mirrorToChat = localStorage.getItem(constants.lsMirrorToChat) === '1';
 
+    // send initial emoteMap
+    socket.emit('updateEmoteMap', {
+      emoteNameToUrl: JSON.parse(
+        localStorage.getItem(constants.lsEmoteMap) || '{}'
+      ),
+    });
+
     const collabChannel = localStorage.getItem(constants.lsCollabChannel) || '';
     const collabListen = localStorage.getItem(constants.lsCollabListen) === '1';
     const collabBroadcast =
@@ -334,9 +337,6 @@ export default function Home() {
                 ) / 100,
             bubbleColor:
               localStorage.getItem(constants.lsCollabBubbleColor) || '#000',
-            emoteNameToUrl: JSON.parse(
-              localStorage.getItem(constants.lsEmoteMap) || '{}'
-            ),
           },
         });
       }

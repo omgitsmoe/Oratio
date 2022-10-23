@@ -101,6 +101,10 @@ io.on('connection', (socket: Socket) => {
   socket.on('phraseSendCollab', (data) => {
     socket.broadcast.emit('collabPhraseRender', data);
   });
+
+  socket.on('updateEmoteMap', (data) => {
+    socket.broadcast.emit('updateEmoteMapClient', data);
+  });
 });
 
 process.on('message', (m: { action: string; port: number }) => {
