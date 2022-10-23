@@ -3,6 +3,7 @@
  */
 
 import path from 'path';
+import fs from 'fs';
 import webpack from 'webpack';
 import webpackPaths from './webpack.paths';
 import { dependencies as externals } from '../../src/package.json';
@@ -20,10 +21,17 @@ export const getCSP = () => {
 default-src 'self' http://localhost:4563;
 style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
 font-src 'self' https://fonts.gstatic.com;
-connect-src 'self' http://localhost:4563 ws://localhost:4563 wss://irc-ws.chat.twitch.tv https://*.tts.speech.microsoft.com wss://*.tts.speech.microsoft.com;
+connect-src 'self' http://localhost:4563 ws://localhost:4563 wss://irc-ws.chat.twitch.tv https://*.tts.speech.microsoft.com wss://*.tts.speech.microsoft.com http://*.pndsn.com https://*.pndsn.com;
 media-src 'self' blob: https://*.tts.speech.microsoft.com;
 img-src 'self' data:`;
 };
+
+const hiddenPath = path.join(webpackPaths.rootPath, 'hidden.json');
+let hidden;
+if (fs.existsSync(hiddenPath)) {
+  const hiddenText = fs.readFileSync(hiddenPath);
+  hidden = JSON.parse(hiddenText);
+}
 
 export default {
   externals: [...Object.keys(externals || {})],
@@ -63,6 +71,8 @@ export default {
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'production',
       TWITCH_CLIENT_ID: '2f58s8a4cjlbel33rm48kutmmdh2sm',
+      PN_PUB: hidden ? hidden.pnPub : '',
+      PN_SUB: hidden ? hidden.pnSub : '',
     }),
   ],
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { MutableRefObject, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
@@ -25,6 +25,7 @@ import { VoiceConfig } from './VoiceConfigBar';
 import TTSConfig from './TTSConfig';
 import TTSCache from '../TTSCache';
 import * as constants from '../constants';
+import PubNubChat from '../Pubnub';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -112,6 +113,8 @@ export default function Home() {
       socket.disconnect();
     };
   });
+
+  const pubnub: MutableRefObject<PubNubChat | null> = useRef(null);
 
   const [ttsActive, setTTSActive] = React.useState(
     localStorage.getItem(constants.lsTTSActive) === '1'
@@ -232,6 +235,12 @@ export default function Home() {
       // send to OBS window, which will forward it to the OBS window if open
       window.electronAPI.sendPhraseOBSWindow(phrase);
 
+      // publish on collab chat if set
+      const collabSendChannel = localStorage.getItem(
+        constants.lsCollabSendChannel
+      ) || 'test123';
+      if (pubnub.current && collabSendChannel) pubnub.current.post(phrase);
+
       // play TTS
       if (ttsActive && tts.current !== null) {
         tts.current.queuePhrase(phrase, {
@@ -276,6 +285,36 @@ export default function Home() {
     chat.mirrorFromChat =
       localStorage.getItem(constants.lsMirrorFromChat) === '1';
     chat.mirrorToChat = localStorage.getItem(constants.lsMirrorToChat) === '1';
+
+    // TODO better use one channel and then bools for listen/send and ignore own messages
+    const collabListenChannels = localStorage.getItem(
+      constants.lsCollabListenChannels
+    ) || 'test123';
+    const collabSendChannel = localStorage.getItem(
+      constants.lsCollabSendChannel
+    ) || 'test123';
+    console.log('pub', process.env.PN_PUB);
+    console.log('sub', process.env.PN_SUB);
+    if (
+      process.env.PN_PUB &&
+      process.env.PN_SUB &&
+      (collabListenChannels || collabSendChannel)
+    ) {
+      let userId = localStorage.getItem(constants.lsCollabUserId);
+      if (!userId) {
+        userId = PubNubChat.generateUserId();
+        localStorage.setItem(constants.lsCollabUserId, userId);
+      }
+
+      pubnub.current = new PubNubChat(
+        process.env.PN_PUB,
+        process.env.PN_SUB,
+        userId,
+        collabSendChannel
+      );
+      if (collabListenChannels)
+        pubnub.current.subscribe(collabListenChannels.split(';'));
+    }
 
     async function initTTS() {
       // these can't change between renders
