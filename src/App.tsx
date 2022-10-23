@@ -12,6 +12,7 @@ import TTSSettings from './components/TTSSettings';
 import enTranslations from './translations/en';
 import jaTranslations from './translations/ja';
 import deTranslations from './translations/de';
+import { lsLanguage } from './constants';
 
 // Initialize i18n
 i18n
@@ -28,7 +29,7 @@ i18n
         translation: deTranslations,
       },
     },
-    lng: localStorage.getItem('selectedLang') || navigator.language,
+    lng: localStorage.getItem(lsLanguage) || navigator.language,
     fallbackLng: 'en',
 
     interpolation: {

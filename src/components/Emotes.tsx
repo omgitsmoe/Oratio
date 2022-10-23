@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as Theme from './Theme';
 import { Emote } from './Emote';
+import { lsEmoteMap, lsTwitchAuth, lsTwitchChannel } from '../constants';
 
 export const emoteNameToUrl: { [key: string]: string } = {};
 export const lowercaseToEmoteName: { [key: string]: string } = {};
@@ -45,7 +46,7 @@ function loadEmoteLib() {
   clearObject(lowercaseToEmoteName);
 
   const emotes: { [name: string]: string } = JSON.parse(
-    localStorage.getItem('emoteNameToUrl') ?? '{}'
+    localStorage.getItem(lsEmoteMap) ?? '{}'
   );
   mergeEmotes(emotes);
 }
@@ -144,8 +145,8 @@ export default function Emotes() {
   const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
   // users can only change this by going back to maing settings so only
   // refreshing it here is fine;
-  const hasAuth = localStorage.getItem('twitchAuth') === '1';
-  const channelName = localStorage.getItem('channelName');
+  const hasAuth = localStorage.getItem(lsTwitchAuth) === '1';
+  const channelName = localStorage.getItem(lsTwitchChannel);
   const canGetEmotes =
     TWITCH_CLIENT_ID && hasAuth && channelName && channelName.length > 3;
 
@@ -202,7 +203,7 @@ export default function Emotes() {
         emoteMap: { [key: string]: string },
         writeToDisk: boolean
       ) => {
-        localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteMap));
+        localStorage.setItem(lsEmoteMap, JSON.stringify(emoteMap));
         loadEmoteLib();
 
         if (writeToDisk === false) {
@@ -222,7 +223,7 @@ export default function Emotes() {
     window.electronAPI.onMergeEmoteMap(
       async (_event, emoteMap: { [key: string]: string }) => {
         mergeEmotes(emoteMap);
-        localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteNameToUrl));
+        localStorage.setItem(lsEmoteMap, JSON.stringify(emoteNameToUrl));
         if (await window.electronAPI.exportEmoteMap(emoteNameToUrl)) {
           setState.current('Exported emote lib!');
         } else {
@@ -266,10 +267,7 @@ export default function Emotes() {
             onClick={async () => {
               clearObject(emoteNameToUrl);
               clearObject(lowercaseToEmoteName);
-              localStorage.setItem(
-                'emoteNameToUrl',
-                JSON.stringify(emoteNameToUrl)
-              );
+              localStorage.setItem(lsEmoteMap, JSON.stringify(emoteNameToUrl));
               forceUpdate();
             }}
           >

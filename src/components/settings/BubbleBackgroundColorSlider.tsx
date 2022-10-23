@@ -4,16 +4,17 @@ import { Grid, Typography } from '@material-ui/core';
 import ColorLensIcon from '@material-ui/icons/ColorLens';
 import { SketchPicker } from 'react-color';
 import { useTranslation } from 'react-i18next';
+import { lsBubbleColor } from '../../constants';
 
 export default function BubbleBackgroundColorPicker() {
   const { t } = useTranslation();
-  const initColor = localStorage.getItem('bubbleColor') || '#ffffff';
+  const initColor = localStorage.getItem(lsBubbleColor) || '#ffffff';
   const [bubbleColor, setBackgroundColor] = React.useState<string>(initColor);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlebackgroundColorChange = (color: any) => {
     setBackgroundColor(color.hex);
-    localStorage.setItem('bubbleColor', color.hex);
+    localStorage.setItem(lsBubbleColor, color.hex);
   };
 
   return (

@@ -83,7 +83,6 @@ const emoteRequest = async (value: string) => {
   return response.json();
 };
 
-// const emoteNameToUrl = JSON.parse(localStorage.getItem('emoteNameToUrl') || '');
 let emoteNameToUrl: { [key: string]: string } = {};
 
 function Emote(attrs: { emoteName: string }) {

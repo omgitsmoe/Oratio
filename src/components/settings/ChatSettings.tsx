@@ -11,6 +11,7 @@ import CheckBoxOutlineBlankIcon from '@material-ui/icons/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@material-ui/icons/CheckBox';
 import { red, green } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
+import { lsMirrorFromChat, lsMirrorToChat, lsTwitchAuth, lsTwitchChannel } from '../../constants';
 
 async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMissing: boolean) => void) {
   // NOTE: apparently it's not a good idea to use destructuring for process.env
@@ -26,7 +27,7 @@ async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMis
   }
 
   window.electronAPI.onReceiveTwitchToken(() => {
-    localStorage.setItem('twitchAuth', '1');
+    localStorage.setItem(lsTwitchAuth, '1');
     // whether token is missing
     notifyChange(false);
   });
@@ -35,33 +36,33 @@ async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMis
 export default function ChatSettings() {
   const { t } = useTranslation();
   const [channelName, setChannelName] = React.useState(
-    localStorage.getItem('channelName') || ''
+    localStorage.getItem(lsTwitchChannel) || ''
   );
   // twitch username min chars is 4
   const missingChannel = channelName === null || channelName.trim().length < 4;
 
   const [missingAuth, setMissingAuth] = React.useState(
-    localStorage.getItem('twitchAuth') !== '1'
+    localStorage.getItem(lsTwitchAuth) !== '1'
   );
 
   const [mirrorFromChat, setMirrorFromChat] = React.useState(
-    localStorage.getItem('mirrorFromChat') === '1'
+    localStorage.getItem(lsMirrorFromChat) === '1'
   );
   const [mirrorToChat, setMirrorToChat] = React.useState(
-    localStorage.getItem('mirrorToChat') === '1'
+    localStorage.getItem(lsMirrorToChat) === '1'
   );
 
   const handleChangeMirrorFromChat = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const newValue = e.currentTarget.checked;
-    localStorage.setItem('mirrorFromChat', newValue ? '1' : '0');
+    localStorage.setItem(lsMirrorFromChat, newValue ? '1' : '0');
     setMirrorFromChat(newValue);
   };
 
   const handleChangeMirrorToChat = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.currentTarget.checked;
-    localStorage.setItem('mirrorToChat', newValue ? '1' : '0');
+    localStorage.setItem(lsMirrorToChat, newValue ? '1' : '0');
     setMirrorToChat(newValue);
   };
 
@@ -78,20 +79,20 @@ export default function ChatSettings() {
             // twitch channel names are at least 4 chars
             if (trimmed.length < 4) {
               setMirrorToChat(false);
-              localStorage.setItem('mirrorToChat', '0');
+              localStorage.setItem(lsMirrorToChat, '0');
               setMirrorFromChat(false);
-              localStorage.setItem('mirrorFromChat', '0');
+              localStorage.setItem(lsMirrorFromChat, '0');
             }
             // changing channel name should remove auth checkmark
             if (!missingAuth) {
               setMissingAuth(true);
-              localStorage.setItem('twitchAuth', '0');
+              localStorage.setItem(lsTwitchAuth, '0');
             }
 
             setChannelName(e.target.value);
             // TODO mb use a delayed timer for setting it, so we don't set it on every keystroke
             // but prob not worth it
-            localStorage.setItem('channelName', e.target.value);
+            localStorage.setItem(lsTwitchChannel, e.target.value);
           }}
         />
       </Grid>

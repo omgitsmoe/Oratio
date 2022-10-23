@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import hotkeys from 'hotkeys-js';
 import * as Theme from '../Theme';
 import { VoiceConfigMap, storageConfigsName } from '../VoiceConfigBar';
+import { lsKeybindings } from '../../constants';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -33,8 +34,6 @@ const useStyles = makeStyles(() =>
   })
 );
 
-const localStorageKeybindings = 'ttsKeybindings';
-
 export default function KeybindConfig() {
   const { t } = useTranslation();
   const classes = useStyles();
@@ -55,7 +54,7 @@ export default function KeybindConfig() {
         console.error('Unknwon action');
     }
 
-    localStorage.setItem(localStorageKeybindings, JSON.stringify(result));
+    localStorage.setItem(lsKeybindings, JSON.stringify(result));
 
     return result;
   }
@@ -63,7 +62,7 @@ export default function KeybindConfig() {
   const [pressedKeys, setPressedKeys] = useState<string[]>([]);
   const [keyBindings, changeBindings] = useReducer(
     reducer,
-    JSON.parse(localStorage.getItem(localStorageKeybindings) || '{}')
+    JSON.parse(localStorage.getItem(lsKeybindings) || '{}')
   );
   const [watching, setWatching] = useState<boolean>(false);
   const stopWatching = useRef(() => {});

@@ -10,6 +10,7 @@ import { red, green } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
 import hotkeys from 'hotkeys-js';
 import { RotateLeft } from '@material-ui/icons';
+import { lsKeybindings } from '../constants';
 
 const useStyles = makeStyles((theme) => ({
   saveName: {
@@ -95,7 +96,7 @@ export default function VoiceConfigBar(props: {
 
     // set up keybindings
     const keyBindings: { [keys: string]: string } = JSON.parse(
-      localStorage.getItem('ttsKeybindings') || '{}'
+      localStorage.getItem(lsKeybindings) || '{}'
     );
     for (const [keys, configName] of Object.entries(keyBindings)) {
       hotkeys(keys, () => {

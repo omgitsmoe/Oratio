@@ -27,6 +27,14 @@ import {
 } from 'microsoft-cognitiveservices-speech-sdk';
 import * as Theme from './Theme';
 import KeybindConfig from './settings/KeybindConfig';
+import {
+  lsVoicesList,
+  lsCacheLimit,
+  lsAzureRegion,
+  lsAzureVoiceLang,
+  lsAzureVoiceName,
+  lsTTSSkipEmotes,
+} from '../constants';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -221,9 +229,6 @@ type VoiceOption = {
   shortName: string;
 };
 
-const localStorageVoicesList = 'ttsVoicesList';
-export const localStorageCacheLimit = 'ttsCacheLimit';
-
 export default function TTSSettings() {
   const classes = useStyles();
   const { t } = useTranslation();
@@ -232,26 +237,26 @@ export default function TTSSettings() {
   const [apiKeyErrorMessage, setApiKeyErrorMessage] = React.useState('');
 
   const [azureRegion, setAzureRegion] = React.useState(
-    localStorage.getItem('azureRegion') || ''
+    localStorage.getItem(lsAzureRegion) || ''
   );
   const [azureVoiceLang, setAzureVoiceLang] = React.useState(
-    localStorage.getItem('azureVoiceLang') || 'en-US'
+    localStorage.getItem(lsAzureVoiceLang) || 'en-US'
   );
   const [azureVoiceName, setAzureVoiceName] = React.useState(
-    localStorage.getItem('azureVoiceName') || ''
+    localStorage.getItem(lsAzureVoiceName) || ''
   );
   const [skipEmotes, setSkipEmotes] = React.useState(
-    localStorage.getItem('ttsSkipEmotes') === '1'
+    localStorage.getItem(lsTTSSkipEmotes) === '1'
   );
 
   // TODO button to clear cache
   const [cacheLimit, setCacheLimit] = React.useState(
-    localStorage.getItem(localStorageCacheLimit) || '500'
+    localStorage.getItem(lsCacheLimit) || '500'
   );
   const [cacheLimitError, setCacheLimitError] = React.useState('');
 
   const [availableVoices, setAvailableVoices] = React.useState<VoiceOption[]>(
-    JSON.parse(localStorage.getItem(localStorageVoicesList) || '[]')
+    JSON.parse(localStorage.getItem(lsVoicesList) || '[]')
   );
   const [azureVoicesListError, setAzureVoicesListError] =
     React.useState<string>('');
@@ -268,10 +273,7 @@ export default function TTSSettings() {
         localName: voiceInfo.localName,
         shortName: voiceInfo.shortName,
       }));
-      localStorage.setItem(
-        localStorageVoicesList,
-        JSON.stringify(voiceOptions)
-      );
+      localStorage.setItem(lsVoicesList, JSON.stringify(voiceOptions));
       setAvailableVoices(voiceOptions);
       setAzureVoicesListError('');
     } else {
@@ -326,7 +328,7 @@ export default function TTSSettings() {
                   const trimmed = e.target.value.trim();
                   // TODO validation?
                   setAzureRegion(trimmed);
-                  localStorage.setItem('azureRegion', trimmed);
+                  localStorage.setItem(lsAzureRegion, trimmed);
                 }}
               />
             </Grid>
@@ -378,7 +380,7 @@ export default function TTSSettings() {
                     const { value } = e.target;
                     // TODO validation?
                     setAzureVoiceName(value as string);
-                    localStorage.setItem('azureVoiceName', value as string);
+                    localStorage.setItem(lsAzureVoiceName, value as string);
                   }}
                 >
                   {availableVoices.map((voiceOption: VoiceOption) => {
@@ -457,7 +459,7 @@ export default function TTSSettings() {
                     );
                   } else {
                     setCacheLimitError('');
-                    localStorage.setItem(localStorageCacheLimit, trimmed);
+                    localStorage.setItem(lsCacheLimit, trimmed);
                   }
                   setCacheLimit(trimmed);
                 }}

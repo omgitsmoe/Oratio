@@ -24,7 +24,7 @@ import { TTSSettings, AzureTTS } from '../TTSAzure';
 import { VoiceConfig } from './VoiceConfigBar';
 import TTSConfig from './TTSConfig';
 import TTSCache from '../TTSCache';
-import { localStorageCacheLimit } from './TTSSettings';
+import * as constants from '../constants';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -78,11 +78,7 @@ async function handleOpenObs() {
   window.electronAPI.openOBSWindow();
 }
 
-const localStorageVoiceStyle = 'ttsVoiceStyle';
-const localStorageVoicePitch = 'ttsVoicePitch';
-const localStorageVoiceRate = 'ttsVoiceRate';
-
-const channelName = localStorage.getItem('channelName');
+const channelName = localStorage.getItem(constants.lsTwitchChannel);
 const oAuthToken = (() => {
   if (!channelName) {
     return null;
@@ -96,8 +92,8 @@ const chat: ChatInteraction = new ChatInteraction(
   null,
   process.env.TWITCH_CLIENT_ID || null,
   {
-    mirrorFromChat: localStorage.getItem('mirrorFromChat') === '1',
-    mirrorToChat: localStorage.getItem('mirrorToChat') === '1',
+    mirrorFromChat: localStorage.getItem(constants.lsMirrorFromChat) === '1',
+    mirrorToChat: localStorage.getItem(constants.lsMirrorToChat) === '1',
   }
 );
 
@@ -108,7 +104,7 @@ export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
   const socket = io(
-    `http://localhost:${localStorage.getItem('serverPort') || '4563'}`
+    `http://localhost:${localStorage.getItem(constants.lsServerPort) || '4563'}`
   );
 
   useEffect(() => {
@@ -118,10 +114,10 @@ export default function Home() {
   });
 
   const [ttsActive, setTTSActive] = React.useState(
-    localStorage.getItem('ttsActive') === '1'
+    localStorage.getItem(constants.lsTTSActive) === '1'
   );
   const [textSoundMuted, setTextSoundMuted] = React.useState(
-    localStorage.getItem('textSoundMuted') === '1'
+    localStorage.getItem(constants.lsTextSoundMuted) === '1'
   );
 
   // these can't change between renders
@@ -141,22 +137,22 @@ export default function Home() {
     }
 
     setTTSActive(value);
-    localStorage.setItem('ttsActive', value ? '1' : '0');
+    localStorage.setItem(constants.lsTTSActive, value ? '1' : '0');
   }
 
   const [voiceStyle, setVoiceStyle] = React.useState(
-    localStorage.getItem(localStorageVoiceStyle) || ''
+    localStorage.getItem(constants.lsVoiceStyle) || ''
   );
   const [voicePitch, setVoicePitch] = React.useState(
-    parseFloat(localStorage.getItem(localStorageVoicePitch) || '0')
+    parseFloat(localStorage.getItem(constants.lsVoicePitch) || '0')
   );
   const [voiceRate, setVoiceRate] = React.useState(
-    parseFloat(localStorage.getItem(localStorageVoiceRate) || '1')
+    parseFloat(localStorage.getItem(constants.lsVoiceRate) || '1')
   );
 
   // these can't change between renders
-  const voiceLang = localStorage.getItem('azureVoiceLang') || '';
-  const voiceName = localStorage.getItem('azureVoiceName') || '';
+  const voiceLang = localStorage.getItem(constants.lsAzureVoiceLang) || '';
+  const voiceName = localStorage.getItem(constants.lsAzureVoiceName) || '';
 
   function getCurrentSettings(): VoiceConfig {
     return {
@@ -169,11 +165,11 @@ export default function Home() {
 
   function handleConfigLoad(_name: string, value: VoiceConfig) {
     setVoiceStyle(value.style);
-    localStorage.setItem(localStorageVoiceStyle, value.style);
+    localStorage.setItem(constants.lsVoiceStyle, value.style);
     setVoicePitch(value.pitch);
-    localStorage.setItem(localStorageVoicePitch, value.pitch.toString());
+    localStorage.setItem(constants.lsVoicePitch, value.pitch.toString());
     setVoiceRate(value.rate);
-    localStorage.setItem(localStorageVoiceRate, value.rate.toString());
+    localStorage.setItem(constants.lsVoiceRate, value.rate.toString());
   }
 
   // wrap in a ref so a re-render doesn't delete our history
@@ -204,17 +200,27 @@ export default function Home() {
       socket.emit('phraseSend', {
         phrase,
         settings: {
-          speed: parseInt(localStorage.getItem('textSpeed') || '75', 10),
-          fontSize: parseInt(localStorage.getItem('fontSize') || '48', 10),
-          fontColor: localStorage.getItem('fontColor') || '#ffffff',
-          fontWeight: parseInt(localStorage.getItem('fontWeight') || '400', 10),
-          soundFileName: localStorage.getItem('soundFileName'),
+          speed: parseInt(
+            localStorage.getItem(constants.lsTextSpeed) || '75',
+            10
+          ),
+          fontSize: parseInt(
+            localStorage.getItem(constants.lsFontSize) || '48',
+            10
+          ),
+          fontColor: localStorage.getItem(constants.lsFontColor) || '#ffffff',
+          fontWeight: parseInt(
+            localStorage.getItem(constants.lsFontWeight) || '400',
+            10
+          ),
+          soundFileName: localStorage.getItem(constants.lsSoundFileName),
           volume: textSoundMuted
             ? 0
-            : parseFloat(localStorage.getItem('volume') || '50') / 100,
-          bubbleColor: localStorage.getItem('bubbleColor') || '#000',
+            : parseFloat(localStorage.getItem(constants.lsVolumeName) || '50') /
+              100,
+          bubbleColor: localStorage.getItem(constants.lsBubbleColor) || '#000',
           emoteNameToUrl: JSON.parse(
-            localStorage.getItem('emoteNameToUrl') || '{}'
+            localStorage.getItem(constants.lsEmoteMap) || '{}'
           ),
         },
       });
@@ -267,15 +273,16 @@ export default function Home() {
     // currently this component only really udpates after the user comes back
     // from the preferences page so it's fine to have this here for now
     chat.updateIdentity(channelName, oAuthToken);
-    chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
-    chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
+    chat.mirrorFromChat =
+      localStorage.getItem(constants.lsMirrorFromChat) === '1';
+    chat.mirrorToChat = localStorage.getItem(constants.lsMirrorToChat) === '1';
 
     async function initTTS() {
       // these can't change between renders
       const ttsSettings: TTSSettings = {
         apiKey: (await window.electronAPI.getAzureKey()) || '',
-        region: localStorage.getItem('azureRegion') || '',
-        skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
+        region: localStorage.getItem(constants.lsAzureRegion) || '',
+        skipEmotes: localStorage.getItem(constants.lsTTSSkipEmotes) === '1',
       };
 
       if (ttsSettings.apiKey && ttsSettings.region) {
@@ -284,7 +291,7 @@ export default function Home() {
         tts.current = new AzureTTS(ttsSettings);
 
         const cacheCap = parseInt(
-          localStorage.getItem(localStorageCacheLimit) || '500',
+          localStorage.getItem(constants.lsCacheLimit) || '500',
           10
         );
         if (tts.current && cacheCap > 0) {
@@ -480,18 +487,18 @@ export default function Home() {
                 voiceStyle={voiceStyle}
                 onStyleChange={(value: string) => {
                   setVoiceStyle(value);
-                  localStorage.setItem(localStorageVoiceStyle, value);
+                  localStorage.setItem(constants.lsVoiceStyle, value);
                 }}
                 onPitchChange={(value: number) => {
                   setVoicePitch(value);
                   localStorage.setItem(
-                    localStorageVoicePitch,
+                    constants.lsVoicePitch,
                     value.toString()
                   );
                 }}
                 onRateChange={(value: number) => {
                   setVoiceRate(value);
-                  localStorage.setItem(localStorageVoiceRate, value.toString());
+                  localStorage.setItem(constants.lsVoiceRate, value.toString());
                 }}
               />
             )}

@@ -4,6 +4,7 @@ import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { FormControl, InputLabel, MenuItem, Select } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
 import * as Theme from '../Theme';
+import { lsSoundFileName } from '../../constants';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -23,13 +24,13 @@ export default function AudioSelector() {
   useEffect(() => {
     (async () => {
       setSoundOptions(await window.electronAPI.getDirListingSounds());
-      setSound(localStorage.getItem('soundFileName') || '');
+      setSound(localStorage.getItem(lsSoundFileName) || '');
     })();
   }, []);
 
   const handleSoundChange = (event: React.ChangeEvent<{ value: unknown }>) => {
     setSound(event.target.value as string);
-    localStorage.setItem('soundFileName', event.target.value as string);
+    localStorage.setItem(lsSoundFileName, event.target.value as string);
   };
 
   const classes = useStyles();

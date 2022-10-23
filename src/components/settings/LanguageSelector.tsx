@@ -4,6 +4,7 @@ import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { FormControl, InputLabel, MenuItem, Select } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
 import * as Theme from '../Theme';
+import { lsLanguage } from '../../constants';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -42,7 +43,7 @@ export default function LanguageSelector() {
     const selectedLang = event.target.value as string;
     setLang(selectedLang);
     i18n.changeLanguage(selectedLang);
-    localStorage.setItem('selectedLang', selectedLang);
+    localStorage.setItem(lsLanguage, selectedLang);
   };
 
   return (

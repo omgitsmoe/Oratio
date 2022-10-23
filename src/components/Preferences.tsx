@@ -22,6 +22,7 @@ import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider'
 import LanguageSelector from './settings/LanguageSelector';
 import ChatSettings from './settings/ChatSettings';
 import pckgInfo from '../package.json';
+import { lsVolumeName, lsTextSpeed, lsFontSize } from '../constants';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -57,16 +58,12 @@ const useStyles = makeStyles(() =>
   })
 );
 
-const localStorageVolumeName = 'volume';
-const localStorageTextSpeed = 'textSpeed';
-const localStorageFontSize = 'fontSize';
-
 export default function Preferences() {
   const classes = useStyles();
   const { t } = useTranslation();
 
   const [volume, setVolume] = React.useState<number>(
-    parseInt(localStorage.getItem(localStorageVolumeName) || '25', 10)
+    parseInt(localStorage.getItem(lsVolumeName) || '25', 10)
   );
 
   const handleVolumeChange = (
@@ -74,11 +71,11 @@ export default function Preferences() {
     newValue: number | number[]
   ) => {
     setVolume(newValue as number);
-    localStorage.setItem(localStorageVolumeName, newValue.toString());
+    localStorage.setItem(lsVolumeName, newValue.toString());
   };
 
   const [textSpeed, setTextSpeed] = React.useState<number>(
-    parseFloat(localStorage.getItem(localStorageTextSpeed) || '75')
+    parseFloat(localStorage.getItem(lsTextSpeed) || '75')
   );
 
   const handleTextSpeedChange = (
@@ -86,11 +83,11 @@ export default function Preferences() {
     newValue: number | number[]
   ) => {
     setTextSpeed(newValue as number);
-    localStorage.setItem(localStorageTextSpeed, newValue.toString());
+    localStorage.setItem(lsTextSpeed, newValue.toString());
   };
 
   const [textSize, setTextSize] = React.useState<number>(
-    parseFloat(localStorage.getItem(localStorageFontSize) || '48')
+    parseFloat(localStorage.getItem(lsFontSize) || '48')
   );
 
   const handelFontSizeChange = (
@@ -98,7 +95,7 @@ export default function Preferences() {
     newValue: number | number[]
   ) => {
     setTextSize(newValue as number);
-    localStorage.setItem(localStorageFontSize, newValue.toString());
+    localStorage.setItem(lsFontSize, newValue.toString());
   };
 
   return (

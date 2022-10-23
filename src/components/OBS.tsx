@@ -5,6 +5,16 @@ import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
 import { Emote } from './Emote';
+import {
+  lsBubbleColor,
+  lsEmoteMap,
+  lsFontColor,
+  lsFontSize,
+  lsFontWeight,
+  lsSoundFileName,
+  lsTextSpeed,
+  lsVolumeName,
+} from '../constants';
 
 // TODO: can we get rid of this duplicated code?
 const emoteNameToUrl: { [key: string]: string } = {};
@@ -22,7 +32,7 @@ async function loadEmoteLib() {
   clearObject(lowercaseToEmoteName);
 
   const emotes: { [name: string]: string } = JSON.parse(
-    localStorage.getItem('emoteNameToUrl') ?? '{}'
+    localStorage.getItem(lsEmoteMap) ?? '{}'
   );
   for (const [k, v] of Object.entries(emotes)) {
     emoteNameToUrl[k] = v;
@@ -58,7 +68,7 @@ const useStyles = makeStyles(() =>
       wordBreak: 'break-word',
     },
     bubble: {
-      backgroundColor: localStorage.getItem('bubbleColor') || '#000',
+      backgroundColor: localStorage.getItem(lsBubbleColor) || '#000',
       padding: '20px',
       border: '3px solid #a9a9a9',
       borderRadius: '8px',
@@ -105,14 +115,14 @@ function SpeechPhrase(props: any) {
   const classes = useStyles();
 
   // TODO Test for performance impact of reading settings on every input
-  const speed = parseInt(localStorage.getItem('textSpeed') || '75', 10);
-  const fontSize = parseInt(localStorage.getItem('fontSize') || '48', 10);
-  const fontColor = localStorage.getItem('fontColor') || '#ffffff';
-  const fontWeight = parseInt(localStorage.getItem('fontWeight') || '400', 10);
-  const soundFileName = localStorage.getItem('soundFileName');
+  const speed = parseInt(localStorage.getItem(lsTextSpeed) || '75', 10);
+  const fontSize = parseInt(localStorage.getItem(lsFontSize) || '48', 10);
+  const fontColor = localStorage.getItem(lsFontColor) || '#ffffff';
+  const fontWeight = parseInt(localStorage.getItem(lsFontWeight) || '400', 10);
+  const soundFileName = localStorage.getItem(lsSoundFileName);
   const speechSound = new Howl({
     src: [`../assets/sounds/${soundFileName}`],
-    volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
+    volume: parseFloat(localStorage.getItem(lsVolumeName) || '50') / 100,
   });
   const timeBetweenChars: number = 150 - speed;
   // sometimes the regular emoji codes can be followed by optional modifiers
