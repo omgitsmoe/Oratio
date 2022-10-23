@@ -301,7 +301,8 @@ type State = {
   settings: { [name: string]: any };
 };
 
-export default function App() {
+export default function App(props: { collab: boolean }) {
+  const { collab } = props;
   // state will only update on a re-render...
   const stateRef: React.MutableRefObject<State> = useRef({
     phrases: [],
@@ -387,9 +388,11 @@ export default function App() {
   // useEffect runs after the first render
   useEffect(() => {
     let runningId = 0;
-    socket.on('phraseRender', (data) => {
+    const eventName = collab ? 'collabPhraseRender' : 'phraseRender';
+    console.log('ws listen on', eventName);
+    socket.on(eventName, (data) => {
       const key: string = uniqueHash();
-      const message: string = data.phrase;
+      const message: string = collab ? 'from collab: ' + data.phrase : data.phrase;
       dispatch({
         type: 'push',
         phrase: { message, key, runningId },

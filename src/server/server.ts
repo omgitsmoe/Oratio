@@ -50,10 +50,19 @@ const assets = JSON.parse(manifest);
 app.get('/', (req: express.Request, res: express.Response) => {
   const sheets = new ServerStyleSheets();
   const component = ReactDOMServer.renderToString(
-    sheets.collect(React.createElement(App))
+    sheets.collect(React.createElement(App, { collab: false }))
   );
   const css = sheets.toString();
-  res.render('display', { assets, component, css, isDevEnv });
+  res.render('display', { assets, component, css, isDevEnv, collab: false });
+});
+
+app.get('/collab', (req: express.Request, res: express.Response) => {
+  const sheets = new ServerStyleSheets();
+  const component = ReactDOMServer.renderToString(
+    sheets.collect(React.createElement(App, { collab: true }))
+  );
+  const css = sheets.toString();
+  res.render('display', { assets, component, css, isDevEnv, collab: true });
 });
 
 // Client bundle throws a lot of errors attempting to package static emote libraries
@@ -82,9 +91,15 @@ const ioOptions = isDevEnv
   : {};
 const io = new Server(server, ioOptions);
 
+// NOTE: we could also use server-sent events (SSE) for this, since we don't
+// need to respond to messages from the client (and use pipes/ipc to communicate
+// with the server process instead)
 io.on('connection', (socket: Socket) => {
   socket.on('phraseSend', (data) => {
     socket.broadcast.emit('phraseRender', data);
+  });
+  socket.on('phraseSendCollab', (data) => {
+    socket.broadcast.emit('collabPhraseRender', data);
   });
 });
 

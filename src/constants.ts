@@ -8,9 +8,11 @@ export const lsTwitchChannel = 'channelName';
 export const lsMirrorFromChat = 'mirrorFromChat';
 export const lsMirrorToChat = 'mirrorToChat';
 
-export const lsCollabListenChannels = 'collabListenChannels';
-export const lsCollabSendChannel = 'collabSendChannel';
+export const lsCollabChannel = 'collabChannel';
+export const lsCollabListen = 'collabListen';
+export const lsCollabBroadcast = 'collabBroadcast';
 export const lsCollabUserId = 'collabUserId';
+
 export const lsVoiceStyle = 'ttsVoiceStyle';
 export const lsVoicePitch = 'ttsVoicePitch';
 export const lsVoiceRate = 'ttsVoiceRate';

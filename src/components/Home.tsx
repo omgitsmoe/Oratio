@@ -25,7 +25,7 @@ import { VoiceConfig } from './VoiceConfigBar';
 import TTSConfig from './TTSConfig';
 import TTSCache from '../TTSCache';
 import * as constants from '../constants';
-import PubNubChat from '../Pubnub';
+import PubnubChat, { PubnubChatMessageEvent } from '../Pubnub';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -114,7 +114,7 @@ export default function Home() {
     };
   });
 
-  const pubnub: MutableRefObject<PubNubChat | null> = useRef(null);
+  const pubnub: MutableRefObject<PubnubChat | null> = useRef(null);
 
   const [ttsActive, setTTSActive] = React.useState(
     localStorage.getItem(constants.lsTTSActive) === '1'
@@ -222,6 +222,7 @@ export default function Home() {
             : parseFloat(localStorage.getItem(constants.lsVolumeName) || '50') /
               100,
           bubbleColor: localStorage.getItem(constants.lsBubbleColor) || '#000',
+          // TODO: don't send this every time
           emoteNameToUrl: JSON.parse(
             localStorage.getItem(constants.lsEmoteMap) || '{}'
           ),
@@ -236,10 +237,12 @@ export default function Home() {
       window.electronAPI.sendPhraseOBSWindow(phrase);
 
       // publish on collab chat if set
-      const collabSendChannel = localStorage.getItem(
-        constants.lsCollabSendChannel
-      ) || 'test123';
-      if (pubnub.current && collabSendChannel) pubnub.current.post(phrase);
+      const collabChannel =
+        localStorage.getItem(constants.lsCollabChannel) || 'test123';
+      const collabBroadcast =
+        localStorage.getItem(constants.lsCollabBroadcast) === '1' || true;
+      if (pubnub.current && collabChannel && collabBroadcast)
+        pubnub.current.post(phrase);
 
       // play TTS
       if (ttsActive && tts.current !== null) {
@@ -287,33 +290,65 @@ export default function Home() {
     chat.mirrorToChat = localStorage.getItem(constants.lsMirrorToChat) === '1';
 
     // TODO better use one channel and then bools for listen/send and ignore own messages
-    const collabListenChannels = localStorage.getItem(
-      constants.lsCollabListenChannels
-    ) || 'test123';
-    const collabSendChannel = localStorage.getItem(
-      constants.lsCollabSendChannel
-    ) || 'test123';
-    console.log('pub', process.env.PN_PUB);
-    console.log('sub', process.env.PN_SUB);
+    const collabChannel =
+      localStorage.getItem(constants.lsCollabChannel) || 'test123';
+    const collabListen =
+      localStorage.getItem(constants.lsCollabListen) === '1' || true;
+    const collabBroadcast =
+      localStorage.getItem(constants.lsCollabBroadcast) === '1' || true;
     if (
       process.env.PN_PUB &&
       process.env.PN_SUB &&
-      (collabListenChannels || collabSendChannel)
+      collabChannel &&
+      (collabListen || collabBroadcast)
     ) {
       let userId = localStorage.getItem(constants.lsCollabUserId);
       if (!userId) {
-        userId = PubNubChat.generateUserId();
+        userId = PubnubChat.generateUserId();
         localStorage.setItem(constants.lsCollabUserId, userId);
       }
 
-      pubnub.current = new PubNubChat(
+      async function collabMessage(event: PubnubChatMessageEvent) {
+        console.log('passing on collab message');
+        socket.emit('phraseSendCollab', {
+          phrase: event.message,
+          settings: {
+            speed: parseInt(
+              localStorage.getItem(constants.lsTextSpeed) || '75',
+              10
+            ),
+            fontSize: parseInt(
+              localStorage.getItem(constants.lsFontSize) || '48',
+              10
+            ),
+            fontColor: localStorage.getItem(constants.lsFontColor) || '#ffffff',
+            fontWeight: parseInt(
+              localStorage.getItem(constants.lsFontWeight) || '400',
+              10
+            ),
+            soundFileName: localStorage.getItem(constants.lsSoundFileName),
+            volume: textSoundMuted
+              ? 0
+              : parseFloat(
+                  localStorage.getItem(constants.lsVolumeName) || '50'
+                ) / 100,
+            bubbleColor:
+              localStorage.getItem(constants.lsBubbleColor) || '#000',
+            emoteNameToUrl: JSON.parse(
+              localStorage.getItem(constants.lsEmoteMap) || '{}'
+            ),
+          },
+        });
+      }
+      pubnub.current = new PubnubChat(
         process.env.PN_PUB,
         process.env.PN_SUB,
         userId,
-        collabSendChannel
+        collabChannel,
+        collabListen,
+        collabBroadcast,
+        collabMessage
       );
-      if (collabListenChannels)
-        pubnub.current.subscribe(collabListenChannels.split(';'));
     }
 
     async function initTTS() {
