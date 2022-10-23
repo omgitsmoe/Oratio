@@ -12,6 +12,7 @@ import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
 import RecordVoiceOverIcon from '@material-ui/icons/RecordVoiceOver';
 import SpeedIcon from '@material-ui/icons/Speed';
 import FormatSizeIcon from '@material-ui/icons/FormatSize';
+import GroupIcon from '@material-ui/icons/Group';
 import * as Theme from './Theme';
 import FontColorPicker from './settings/FontColorPicker';
 import FontBoldSlider from './settings/FontBoldSlider';
@@ -22,7 +23,15 @@ import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider'
 import LanguageSelector from './settings/LanguageSelector';
 import ChatSettings from './settings/ChatSettings';
 import pckgInfo from '../package.json';
-import { lsVolumeName, lsTextSpeed, lsFontSize } from '../constants';
+import {
+  lsVolumeName,
+  lsTextSpeed,
+  lsFontSize,
+  lsFontWeight,
+  lsFontColor,
+  lsBubbleColor,
+  lsSoundFileName,
+} from '../constants';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -108,7 +117,10 @@ export default function Preferences() {
                 <ChatSettings />
               </Grid>
               <Grid item xs={6}>
-                <AudioSelector />
+                <AudioSelector
+                  localStorageName={lsSoundFileName}
+                  noMargin={true}
+                />
               </Grid>
               <Grid item xs={6}>
                 <VolumeSlider
@@ -138,11 +150,20 @@ export default function Preferences() {
                 />
               </Grid>
               <Grid item xs={6}>
-                <FontBoldSlider />
+                <FontBoldSlider localStorageName={lsFontWeight} />
               </Grid>
               <Grid item xs={6}>
                 <LanguageSelector />
               </Grid>
+              <Grid item xs={6}>
+                <FontColorPicker localStorageName={lsFontColor} />
+              </Grid>
+              <Grid item xs={6}>
+                <BubbleBackgroundColorPicker localStorageName={lsBubbleColor} />
+              </Grid>
+            </Grid>
+
+            <Grid container direction="row" spacing={3}>
               <Grid item xs={12}>
                 <Link to="/emotes" className={classes.link}>
                   <Button
@@ -169,11 +190,18 @@ export default function Preferences() {
                   </Button>
                 </Link>
               </Grid>
-              <Grid item xs={6}>
-                <FontColorPicker />
-              </Grid>
-              <Grid item xs={6}>
-                <BubbleBackgroundColorPicker />
+              <Grid item xs={12}>
+                <Link to="/collab" className={classes.link}>
+                  <Button
+                    id="open-preferences-collab"
+                    variant="contained"
+                    className={classes.button}
+                    color="primary"
+                  >
+                    <GroupIcon className={classes.emoteIcon} />
+                    {t('Collab Settings')}
+                  </Button>
+                </Link>
               </Grid>
             </Grid>
             <Grid item xs={12} style={{ marginTop: '1em' }}>

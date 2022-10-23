@@ -12,6 +12,13 @@ export const lsCollabChannel = 'collabChannel';
 export const lsCollabListen = 'collabListen';
 export const lsCollabBroadcast = 'collabBroadcast';
 export const lsCollabUserId = 'collabUserId';
+export const lsCollabVolumeName = 'collabVolume';
+export const lsCollabTextSpeed = 'collabTextSpeed';
+export const lsCollabFontSize = 'collabFontSize';
+export const lsCollabFontColor = 'collabFontColor';
+export const lsCollabFontWeight = 'collabFontWeight';
+export const lsCollabSoundFileName = 'collabSoundFileName';
+export const lsCollabBubbleColor = 'collabBubbleColor';
 
 export const lsVoiceStyle = 'ttsVoiceStyle';
 export const lsVoicePitch = 'ttsVoicePitch';

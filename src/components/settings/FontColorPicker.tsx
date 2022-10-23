@@ -4,17 +4,17 @@ import { Grid, Typography } from '@material-ui/core';
 import ColorLensIcon from '@material-ui/icons/ColorLens';
 import { SketchPicker } from 'react-color';
 import { useTranslation } from 'react-i18next';
-import { lsFontColor } from '../../constants';
 
-export default function FontColorPicker() {
+export default function FontColorPicker(props: { localStorageName: string }) {
   const { t } = useTranslation();
-  const initColor = localStorage.getItem(lsFontColor) || '#ffffff';
+  const { localStorageName } = props;
+  const initColor = localStorage.getItem(localStorageName) || '#ffffff';
   const [fontColor, setFontColor] = React.useState<string>(initColor);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFontColorChange = (color: any) => {
     setFontColor(color.hex);
-    localStorage.setItem(lsFontColor, color.hex);
+    localStorage.setItem(localStorageName, color.hex);
   };
 
   return (

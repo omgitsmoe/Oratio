@@ -56,4 +56,9 @@ that channel:`,
     'considered as billable characters by Azure speech. So use the least amount of non-default' +
     'values possible! This warning sign will be colored red if there are any settings that ' +
     'occur any additional costs!',
+  'collab-channel-explanation':
+    'In order to receive/send messages from/to other Oratio users you need to join the ' +
+    "same channel. Since the API keys can't be hidden in an installed application " +
+    "DO NOT SHARE the channel name with untrusted people and don't pick a name that's" +
+    ' trivial to guess!',
 };

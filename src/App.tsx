@@ -9,6 +9,7 @@ import Preferences from './components/Preferences';
 import Emotes from './components/Emotes';
 import Home from './components/Home';
 import TTSSettings from './components/TTSSettings';
+import CollabSettings from './components/CollabSettings';
 import enTranslations from './translations/en';
 import jaTranslations from './translations/ja';
 import deTranslations from './translations/de';
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/preferences" element={<Preferences />} />
         <Route path="/emotes" element={<Emotes />} />
         <Route path="/tts" element={<TTSSettings />} />
+        <Route path="/collab" element={<CollabSettings />} />
       </Routes>
     </Router>
   );

@@ -385,7 +385,6 @@ export default function App(props: { collab: boolean }) {
     }
   });
 
-  // useEffect runs after the first render
   useEffect(() => {
     let runningId = 0;
     const eventName = collab ? 'collabPhraseRender' : 'phraseRender';

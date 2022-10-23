@@ -3,18 +3,18 @@ import React from 'react';
 import { Grid, Slider, Typography } from '@material-ui/core';
 import FormatBoldIcon from '@material-ui/icons/FormatBold';
 import { useTranslation } from 'react-i18next';
-import { lsFontWeight } from '../../constants';
 
-export default function FontBoldSlider() {
+export default function FontBoldSlider(props: { localStorageName: string }) {
   const { t } = useTranslation();
+  const { localStorageName } = props;
   const [fontWeight, setFontWeight] = React.useState<number>(
-    parseInt(localStorage.getItem(lsFontWeight) || '400', 10)
+    parseInt(localStorage.getItem(localStorageName) || '400', 10)
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFontWeightChange = (_event: any, newValue: number | number[]) => {
     setFontWeight(newValue as number);
-    localStorage.setItem(lsFontWeight, newValue.toString());
+    localStorage.setItem(localStorageName, newValue.toString());
   };
 
   return (

@@ -289,13 +289,10 @@ export default function Home() {
       localStorage.getItem(constants.lsMirrorFromChat) === '1';
     chat.mirrorToChat = localStorage.getItem(constants.lsMirrorToChat) === '1';
 
-    // TODO better use one channel and then bools for listen/send and ignore own messages
-    const collabChannel =
-      localStorage.getItem(constants.lsCollabChannel) || 'test123';
-    const collabListen =
-      localStorage.getItem(constants.lsCollabListen) === '1' || true;
+    const collabChannel = localStorage.getItem(constants.lsCollabChannel) || '';
+    const collabListen = localStorage.getItem(constants.lsCollabListen) === '1';
     const collabBroadcast =
-      localStorage.getItem(constants.lsCollabBroadcast) === '1' || true;
+      localStorage.getItem(constants.lsCollabBroadcast) === '1';
     if (
       process.env.PN_PUB &&
       process.env.PN_SUB &&
@@ -314,26 +311,29 @@ export default function Home() {
           phrase: event.message,
           settings: {
             speed: parseInt(
-              localStorage.getItem(constants.lsTextSpeed) || '75',
+              localStorage.getItem(constants.lsCollabTextSpeed) || '75',
               10
             ),
             fontSize: parseInt(
-              localStorage.getItem(constants.lsFontSize) || '48',
+              localStorage.getItem(constants.lsCollabFontSize) || '48',
               10
             ),
-            fontColor: localStorage.getItem(constants.lsFontColor) || '#ffffff',
+            fontColor:
+              localStorage.getItem(constants.lsCollabFontColor) || '#ffffff',
             fontWeight: parseInt(
-              localStorage.getItem(constants.lsFontWeight) || '400',
+              localStorage.getItem(constants.lsCollabFontWeight) || '400',
               10
             ),
-            soundFileName: localStorage.getItem(constants.lsSoundFileName),
+            soundFileName: localStorage.getItem(
+              constants.lsCollabSoundFileName
+            ),
             volume: textSoundMuted
               ? 0
               : parseFloat(
-                  localStorage.getItem(constants.lsVolumeName) || '50'
+                  localStorage.getItem(constants.lsCollabVolumeName) || '0'
                 ) / 100,
             bubbleColor:
-              localStorage.getItem(constants.lsBubbleColor) || '#000',
+              localStorage.getItem(constants.lsCollabBubbleColor) || '#000',
             emoteNameToUrl: JSON.parse(
               localStorage.getItem(constants.lsEmoteMap) || '{}'
             ),
