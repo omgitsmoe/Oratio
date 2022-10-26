@@ -76,7 +76,9 @@ function uniqueHash() {
 }
 
 // Get emote element from the server as the client bundle fails to load them
-const emoteRequest = async (value: string) => {
+const emoteRequest = async (
+  value: string
+): Promise<{ found: boolean; value: string }> => {
   const url = new URL('http://localhost:4563/emotes');
   url.searchParams.append('string', value);
   const response = await fetch(url.toString());
@@ -112,10 +114,27 @@ function Emote(attrs: { emoteName: string }) {
 // TODO: figure out a way to remove all this duplicate code and merge it
 // with src/components/OBS.tsx; my webpack knowledge is not good enough
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function SpeechPhrase(props: any) {
+type OnScreenSettings = {
+  speed: number;
+  fontSize: number;
+  fontColor: string;
+  fontWeight: number;
+  soundFileName: string;
+  volume: number;
+  bubbleColor: string;
+};
+
+type SpeechPhraseProps = {
+  key: string;
+  runningId: number;
+  dispatchRef: React.MutableRefObject<(action: ReducerAction) => void>;
+  message: string;
+  settings: OnScreenSettings;
+};
+
+function SpeechPhrase(props: SpeechPhraseProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const speechDisplay: any = useRef<HTMLSpanElement>(null);
+  const speechDisplay = useRef<HTMLSpanElement | null>(null);
   const { message, settings } = props;
   const classes = useStyles(props);
 
@@ -142,6 +161,7 @@ function SpeechPhrase(props: any) {
   const emotes = [...message.matchAll(/\w+/g)].filter(
     (e) => e[0] in emoteNameToUrl
   );
+  console.log(emoteNameToUrl);
 
   const timePerChar = 40; // avg reading speed is 25 letters/s -> 40ms/letter
   const clamp = (num: number, min: number, max: number) =>
@@ -152,9 +172,11 @@ function SpeechPhrase(props: any) {
     DEFAULT_TIMEOUT + clamp(timePerChar * message.length, 0, 15000);
 
   useEffect(() => {
-    speechDisplay.current.style.fontSize = fontSize;
+    if (!speechDisplay.current)
+      throw new Error('speechDisplay not initialized');
+    speechDisplay.current.style.fontSize = fontSize.toString();
     speechDisplay.current.style.color = fontColor;
-    speechDisplay.current.style.fontWeight = fontWeight;
+    speechDisplay.current.style.fontWeight = fontWeight.toString();
 
     // `i` is the message character index
     let i = 0;
@@ -209,7 +231,10 @@ function SpeechPhrase(props: any) {
     observer.observe(speechDisplay.current);
 
     let currentTextFragment: HTMLSpanElement | null = null;
-    const typewriter = () => {
+    const typewriter = async () => {
+      if (!speechDisplay.current)
+        throw new Error('speechDisplay not initialized');
+
       if (i < message.length) {
         speechSound.stop();
 
@@ -228,25 +253,19 @@ function SpeechPhrase(props: any) {
           const emojiString = foundEmoji[0];
           i += emojiString.length;
 
-          emoteRequest(emojiString)
-            .then((data) => {
-              if (data.found) {
-                const emojiContainer = document.createElement('span');
-                emojiContainer.innerHTML = data.value;
-                emojiContainer.children[0].classList.add(classes.emoji);
-                speechDisplay.current.appendChild(emojiContainer);
-              } else {
-                // no emoji found -> output it as normal text, which is probably
-                // better than not outputting anything at all
-                const tempTextContainer = document.createElement('span');
-                tempTextContainer.textContent = emojiString;
-                speechDisplay.current.appendChild(tempTextContainer);
-              }
-              return emojiString;
-            })
-            .catch((error) => {
-              throw error;
-            });
+          const resp = await emoteRequest(emojiString);
+          if (resp.found) {
+            const emojiContainer = document.createElement('span');
+            emojiContainer.innerHTML = resp.value;
+            emojiContainer.children[0].classList.add(classes.emoji);
+            speechDisplay.current.appendChild(emojiContainer);
+          } else {
+            // no emoji found -> output it as normal text, which is probably
+            // better than not outputting anything at all
+            const tempTextContainer = document.createElement('span');
+            tempTextContainer.textContent = emojiString;
+            speechDisplay.current.appendChild(tempTextContainer);
+          }
         } else if (foundEmote) {
           // end previous text fragment
           currentTextFragment = null;
@@ -296,8 +315,35 @@ interface Phrase {
 
 type State = {
   phrases: Phrase[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  settings: { [name: string]: any };
+  settings: OnScreenSettings;
+};
+
+type ReducerAction =
+  | ReducerActionPush
+  | ReducerActionShift
+  | ReducerActionRemove;
+
+type ReducerActionPush = {
+  type: 'push';
+  phrase: Phrase;
+  settings: OnScreenSettings;
+};
+type ReducerActionShift = {
+  type: 'shift';
+};
+type ReducerActionRemove = {
+  type: 'remove';
+  id: number;
+};
+
+const defaultSettings: OnScreenSettings = {
+  speed: 75,
+  fontSize: 48,
+  fontColor: '#ffffff',
+  fontWeight: 400,
+  soundFileName: '',
+  volume: 50,
+  bubbleColor: '#000',
 };
 
 export default function App(props: { collab: boolean }) {
@@ -305,11 +351,11 @@ export default function App(props: { collab: boolean }) {
   // state will only update on a re-render...
   const stateRef: React.MutableRefObject<State> = useRef({
     phrases: [],
-    settings: {},
+    settings: defaultSettings,
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function reducer(state: any, action: any) {
+  function reducer(state: State, action: ReducerAction) {
     let result: State;
     switch (action.type) {
       case 'push':
@@ -344,11 +390,11 @@ export default function App(props: { collab: boolean }) {
     return result;
   }
 
-  const [state, dispatch] = useReducer(reducer, { phrases: [], settings: {} });
+  const [state, dispatch] = useReducer(reducer, stateRef.current);
   // useRef can be thought of as a instance variable for functional components
   // phrase ids waiting for removal (since older ids are still alive)
   const waiting: React.MutableRefObject<{ [id: number]: boolean }> = useRef({});
-  const wrappedDispatch = useRef((action: { type: string; id?: number }) => {
+  const wrappedDispatch = useRef((action: ReducerAction) => {
     if (action.type === 'remove') {
       // we know id will not be undefined when action==="shift"
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -386,13 +432,10 @@ export default function App(props: { collab: boolean }) {
 
   useEffect(() => {
     let runningId = 0;
-    // TODO
     const eventName = collab ? 'collabPhraseRender' : 'phraseRender';
-    console.log('ws listen on', eventName);
     socket.on(eventName, (data) => {
       const key: string = uniqueHash();
-      // TODO
-      const message: string = collab ? 'from collab: ' + data.phrase : data.phrase;
+      const message: string = data.phrase;
       dispatch({
         type: 'push',
         phrase: { message, key, runningId },
@@ -403,13 +446,13 @@ export default function App(props: { collab: boolean }) {
     });
 
     socket.on('updateEmoteMapClient', (data) => {
-      console.log('collab', collab, 'updating emote map');
       if (data.emoteNameToUrl) emoteNameToUrl = data.emoteNameToUrl;
     });
 
     return () => {
       socket.disconnect();
     };
+    // collab can't change after receiving it, so it doesn't need to be in the deps array
   }, []);
 
   const classes = useStyles({ bubbleColor: state.settings.bubbleColor });
