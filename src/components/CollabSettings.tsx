@@ -32,6 +32,7 @@ import {
   lsCollabFontSize,
   lsCollabFontWeight,
   lsCollabListen,
+  lsCollabNick,
   lsCollabSoundFileName,
   lsCollabTextSpeed,
   lsCollabVolumeName,
@@ -81,6 +82,12 @@ export default function TTSSettings() {
   const [volume, setVolume] = React.useState(
     parseInt(localStorage.getItem(lsCollabVolumeName) || '0')
   );
+
+  const [nickName, setNickName] = React.useState(
+    localStorage.getItem(lsCollabNick) || ''
+  );
+  const [nickNameError, setNickNameError] = React.useState('');
+
   function handleVolumeChange(
     _event: React.ChangeEvent<unknown>,
     newVolume: number | number[]
@@ -123,14 +130,18 @@ export default function TTSSettings() {
       <div className={classes.root}>
         <div className={classes.content}>
           <h2>{t('Collab Settings')}</h2>
-          {t('collab-channel-explanation')}
+          <p>{t('collab-channel-explanation')}</p>
+          <p>
+            {t('Browser source will be running at: ')}
+            <b>{'http://localhost:4563/collab'}</b>
+          </p>
           <Grid
             container
             direction="row"
             spacing={3}
             style={{ marginTop: '8px' }}
           >
-            <Grid item xs={6}>
+            <Grid item xs={8}>
               <TextField
                 className={classes.formControl}
                 id="channel-name"
@@ -141,7 +152,7 @@ export default function TTSSettings() {
                 helperText={channelNameError}
                 onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                   const trimmed = e.target.value.trim();
-                  if (!trimmed.match(/[-_=@.!$#%&^;A-Za-z0-9]{3,92}/)) {
+                  if (!trimmed.match(/^[-_=@.!$#%&^;A-Za-z0-9]{3,92}$/)) {
                     setChannelNameError(
                       'Channel names are alphanumeric with a minimum of 3 and a maximum of ' +
                         '92 characters including the following special charachters "-_=@.!$#%&^;"'
@@ -151,6 +162,33 @@ export default function TTSSettings() {
                     localStorage.setItem(lsCollabChannel, trimmed);
                   }
                   setChannelName(trimmed);
+                }}
+              />
+            </Grid>
+            <Grid item xs={8}>
+              <TextField
+                className={classes.formControl}
+                id="collab-nickname"
+                fullWidth
+                label={t('Nickname')}
+                value={nickName}
+                error={nickNameError !== ''}
+                helperText={nickNameError}
+                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                  const trimmed = e.target.value.trim();
+                  if (trimmed.length > 15) {
+                    setNickNameError(
+                      'Nick names may only be a maximum of 15 characters long!'
+                    );
+                  } else if (trimmed.indexOf(':') !== -1) {
+                    setNickNameError(
+                      'Nick names are not allowed to contain colons!'
+                    );
+                  } else {
+                    setNickNameError('');
+                    localStorage.setItem(lsCollabNick, trimmed);
+                  }
+                  setNickName(trimmed);
                 }}
               />
             </Grid>

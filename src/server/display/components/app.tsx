@@ -40,6 +40,26 @@ const useStyles = makeStyles(() =>
     }),
     span: () => ({
       display: 'block',
+      position: 'relative',
+    }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    nameTag: (props: any) => ({
+      top: -6 + props.fontSize / -8,
+      left: Math.max(-10, -4 + props.fontSize / -9.5),
+      fontSize: props.fontSize / 4,
+      border: '1px solid #E0e3e7',
+      borderRadius: '10px',
+      verticalAlign: 'middle',
+      boxSizing: 'border-box',
+      margin: 0,
+      padding: 0,
+      paddingLeft: '8px',
+      paddingRight: '8px',
+      position: 'absolute',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      maxWidth: '100%',
     }),
     emoji: {
       verticalAlign: 'middle',
@@ -59,9 +79,22 @@ const useStyles = makeStyles(() =>
 );
 
 // eslint-disable-next-line react/display-name
-const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
-  const classes = useStyles(_props);
-  return <span ref={ref} className={classes.span} />;
+const SpeechDisplay = React.forwardRef<
+  HTMLSpanElement,
+  { settings: OnScreenSettings; nameTag?: string }
+>((_props: { settings: OnScreenSettings; nameTag?: string }, ref) => {
+  const classes = useStyles({ fontSize: _props.settings.fontSize });
+  return (
+    <span
+      ref={ref}
+      className={classes.span}
+      style={{ marginTop: _props.nameTag ? _props.settings.fontSize / 8 : '0' }}
+    >
+      {_props.nameTag && (
+        <span className={classes.nameTag}>{_props.nameTag}</span>
+      )}
+    </span>
+  );
 });
 
 function uniqueHash() {
@@ -89,16 +122,7 @@ let emoteNameToUrl: { [key: string]: string } = {};
 
 function Emote(attrs: { emoteName: string }) {
   const { emoteName } = attrs;
-  const classes = useStyles({
-    emote: {
-      display: 'inline-block',
-      width: 'auto',
-      height: 'auto',
-      'max-height': '2em',
-      'max-width': '1000px',
-      verticalAlign: 'middle',
-    },
-  });
+  const classes = useStyles({});
   if (emoteName in emoteNameToUrl) {
     return (
       <img
@@ -130,12 +154,13 @@ type SpeechPhraseProps = {
   dispatchRef: React.MutableRefObject<(action: ReducerAction) => void>;
   message: string;
   settings: OnScreenSettings;
+  nameTag?: string;
 };
 
 function SpeechPhrase(props: SpeechPhraseProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechDisplay = useRef<HTMLSpanElement | null>(null);
-  const { message, settings } = props;
+  const { message, settings, nameTag } = props;
   const classes = useStyles(props);
 
   // TODO Test for performance impact of reading settings on every input
@@ -303,13 +328,20 @@ function SpeechPhrase(props: SpeechPhraseProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <SpeechDisplay ref={speechDisplay} />;
+  return (
+    <SpeechDisplay
+      ref={speechDisplay}
+      nameTag={nameTag}
+      settings={props.settings}
+    />
+  );
 }
 
 interface Phrase {
   message: string;
   key: string;
   runningId: number;
+  nameTag?: string;
 }
 
 type State = {
@@ -358,6 +390,14 @@ export default function App(props: { collab: boolean }) {
     let result: State;
     switch (action.type) {
       case 'push':
+        // if we have the same name tag as the phrase before (that is still being shown)
+        // then don't show the nameTag by setting it to undefined
+        if (
+          state.phrases.length > 0 &&
+          action.phrase.nameTag ===
+            state.phrases[state.phrases.length - 1].nameTag
+        )
+          action.phrase.nameTag = undefined;
         result = {
           phrases: [...state.phrases, action.phrase],
           settings: action.settings,
@@ -437,7 +477,7 @@ export default function App(props: { collab: boolean }) {
       const message: string = data.phrase;
       dispatch({
         type: 'push',
-        phrase: { message, key, runningId },
+        phrase: { message, key, runningId, nameTag: data.nameTag },
         settings: data.settings,
       });
 
@@ -470,6 +510,7 @@ export default function App(props: { collab: boolean }) {
               message={phrase.message}
               dispatchRef={wrappedDispatch}
               settings={state.settings}
+              nameTag={phrase.nameTag}
             />
           );
         })}

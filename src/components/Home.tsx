@@ -215,6 +215,7 @@ export default function Home() {
         console.log('passing on collab message');
         socket.emit('phraseSendCollab', {
           phrase: event.message,
+          nameTag: event.nick,
           settings: {
             speed: parseInt(
               localStorage.getItem(constants.lsCollabTextSpeed) || '75',
@@ -248,6 +249,7 @@ export default function Home() {
         process.env.PN_SUB,
         userId,
         collabChannel,
+        localStorage.getItem(constants.lsCollabNick) || '',
         collabListen,
         collabBroadcast,
         collabMessage
@@ -296,7 +298,7 @@ export default function Home() {
         chat.sendToChat(phrase);
       }
 
-      // send to OBS window, which will forward it to the OBS window if open
+      // send to main, which will forward it to the OBS window if open
       window.electronAPI.sendPhraseOBSWindow(phrase);
 
       // publish on collab chat if set

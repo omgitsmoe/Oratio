@@ -1,6 +1,9 @@
 import Pubnub from 'pubnub';
 
-export type PubnubChatMessageEvent = Pubnub.MessageEvent;
+export type PubnubChatMessageEvent = {
+  message: string;
+  nick: string;
+};
 
 export default class PubnubChat {
   #pubnub: Pubnub;
@@ -9,21 +12,24 @@ export default class PubnubChat {
 
   #channel: string;
 
+  #nickName: string;
+
   // currently not needed, since we don't allow this to change
   // #listen: boolean;
 
   #broadcast: boolean;
 
-  #messageCallback: ((event: Pubnub.MessageEvent) => void) | null;
+  #messageCallback: ((event: PubnubChatMessageEvent) => void) | null;
 
   constructor(
     publishKey: string,
     subscribeKey: string,
     userId: string,
     channel: string,
+    nickName: string,
     listen: boolean,
     broadcast: boolean,
-    messageCallback: ((event: Pubnub.MessageEvent) => void) | null
+    messageCallback: ((event: PubnubChatMessageEvent) => void) | null
   ) {
     this.#pubnub = new Pubnub({
       publishKey,
@@ -33,6 +39,7 @@ export default class PubnubChat {
 
     this.#userId = userId;
     this.#channel = channel;
+    this.#nickName = nickName;
     // this.#listen = listen;
     this.#broadcast = broadcast;
     // NOTE: we need to pass a closure here so onMessage actually gets called on the
@@ -43,16 +50,27 @@ export default class PubnubChat {
     if (listen) this.subscribe(channel);
   }
 
+  public stop() {
+    this.#pubnub.stop();
+  }
+
   onMessage(message: Pubnub.MessageEvent) {
     console.log(
       `msg ${message.message} by ${message.publisher} in channel ${message.channel}`
     );
-    console.log('msg callback', this.#messageCallback);
-    if (this.#messageCallback) this.#messageCallback(message);
+    const msg: string = message.message;
+    const sepIdx = msg.indexOf(':');
+    const nick = msg.substring(0, sepIdx);
+    // NOTE: assuming message length is at least one (since we don't allow to send
+    // 0 char messages in the main message box)
+    const actualMessage = msg.substring(sepIdx + 1);
+    const isSelf = message.publisher === this.#userId;
+    if (!isSelf && this.#messageCallback)
+      this.#messageCallback({ message: actualMessage, nick });
   }
 
   public set messageCallback(
-    callback: (event: Pubnub.MessageEvent) => void | null
+    callback: (event: PubnubChatMessageEvent) => void | null
   ) {
     this.#messageCallback = callback;
   }
@@ -84,7 +102,10 @@ export default class PubnubChat {
     if (!this.#broadcast) return;
 
     try {
-      this.#pubnub.publish({ message, channel: this.#channel });
+      this.#pubnub.publish({
+        message: `${this.#nickName}:${message}`,
+        channel: this.#channel,
+      });
     } catch (err) {
       console.log('pubnub publish err: ', err);
     }

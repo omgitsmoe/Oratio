@@ -9,6 +9,7 @@ export const lsMirrorFromChat = 'mirrorFromChat';
 export const lsMirrorToChat = 'mirrorToChat';
 
 export const lsCollabChannel = 'collabChannel';
+export const lsCollabNick = 'collabNickName';
 export const lsCollabListen = 'collabListen';
 export const lsCollabBroadcast = 'collabBroadcast';
 export const lsCollabUserId = 'collabUserId';
