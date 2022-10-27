@@ -307,7 +307,7 @@ export default function TTSSettings() {
                 helperText={apiKeyErrorMessage}
                 onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                   const trimmed = e.target.value.trim();
-                  if (!trimmed.match(/[a-fA-F0-9]{32}/)) {
+                  if (!trimmed.match(/^[a-fA-F0-9]{32}$/)) {
                     setApiKeyErrorMessage('Invalid API key');
                   } else {
                     setApiKeyErrorMessage('');
