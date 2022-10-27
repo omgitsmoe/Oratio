@@ -129,6 +129,7 @@ export default function ChatSettings() {
               id="open-browser-auth"
               variant="contained"
               // className={classes.button}
+              disabled={channelName.length < 3}
               color="primary"
               // send event to main process to open the OAuth token generator in
               // the default browser
