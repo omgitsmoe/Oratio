@@ -91,6 +91,7 @@ const ioOptions = isDevEnv
   : {};
 const io = new Server(server, ioOptions);
 
+let emoteMap: { [key: string]: string };
 // NOTE: we could also use server-sent events (SSE) for this, since we don't
 // need to respond to messages from the client (and use pipes/ipc to communicate
 // with the server process instead)
@@ -102,7 +103,14 @@ io.on('connection', (socket: Socket) => {
     socket.broadcast.emit('collabPhraseRender', data);
   });
 
+  // send emote map on new connection
+  if (emoteMap) {
+    socket.emit('updateEmoteMapClient', { emoteNameToUrl: emoteMap });
+  }
+
+  // and when we receive an update
   socket.on('updateEmoteMap', (data) => {
+    emoteMap = data.emoteNameToUrl;
     socket.broadcast.emit('updateEmoteMapClient', data);
   });
 });
