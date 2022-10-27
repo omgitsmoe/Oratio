@@ -187,109 +187,12 @@ export default function Home() {
   // need to creat this function inside a useEffect with the correct dependency array,
   // otherwise the closure will use outdated values like voiceVolume etc.
   useEffect(() => {
-    const addToHistory = (text: string) => {
-      const curTextHistory = textHistory.current;
-      if (curTextHistory[curTextHistory.length - 1] !== text) {
-        curTextHistory.push(text);
-        if (curTextHistory.length >= 100) {
-          curTextHistory.shift();
-        }
-        textHistoryPos.current = curTextHistory.length;
-      }
-    };
-
-    sendSpeech.current = async (phrase: string, from_chat: boolean) => {
-      if (phrase.trim() === '') return;
-      socket.emit('phraseSend', {
-        phrase,
-        settings: {
-          speed: parseInt(
-            localStorage.getItem(constants.lsTextSpeed) || '75',
-            10
-          ),
-          fontSize: parseInt(
-            localStorage.getItem(constants.lsFontSize) || '48',
-            10
-          ),
-          fontColor: localStorage.getItem(constants.lsFontColor) || '#ffffff',
-          fontWeight: parseInt(
-            localStorage.getItem(constants.lsFontWeight) || '400',
-            10
-          ),
-          soundFileName: localStorage.getItem(constants.lsSoundFileName),
-          volume: textSoundMuted
-            ? 0
-            : parseFloat(localStorage.getItem(constants.lsVolumeName) || '50') /
-              100,
-          bubbleColor: localStorage.getItem(constants.lsBubbleColor) || '#000',
-        },
-      });
-      // post the same message in twitch chat
-      if (!from_chat && chat.mirrorToChat) {
-        chat.sendToChat(phrase);
-      }
-
-      // send to OBS window, which will forward it to the OBS window if open
-      window.electronAPI.sendPhraseOBSWindow(phrase);
-
-      // publish on collab chat if set
-      const collabChannel =
-        localStorage.getItem(constants.lsCollabChannel) || 'test123';
-      const collabBroadcast =
-        localStorage.getItem(constants.lsCollabBroadcast) === '1' || true;
-      if (pubnub.current && collabChannel && collabBroadcast)
-        pubnub.current.post(phrase);
-
-      // play TTS
-      if (ttsActive && tts.current !== null) {
-        tts.current.queuePhrase(phrase, {
-          voiceLang,
-          voiceName,
-          voiceStyle,
-          voiceVolume,
-          voicePitch,
-          voiceRate,
-        });
-      }
-
-      addToHistory(phrase);
-    };
-
-    // update chat interaction handler, otherwise it will use an outdated version
-    chat.setOnChatEvent(sendSpeech.current);
-  }, [
-    ttsActive,
-    voiceStyle,
-    voicePitch,
-    voiceRate,
-    textSoundMuted,
-    socket,
-    voiceLang,
-    voiceName,
-  ]);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSpeechSendClicked = async (event: any) => {
-    event.preventDefault();
-    const { speech } = event.currentTarget.elements;
-    if (sendSpeech.current !== null)
-      await sendSpeech.current(speech.value, false);
-    speech.value = '';
-  };
-
-  useEffect(() => {
-    // currently this component only really udpates after the user comes back
-    // from the preferences page so it's fine to have this here for now
-    chat.updateIdentity(channelName, oAuthToken);
-    chat.mirrorFromChat =
-      localStorage.getItem(constants.lsMirrorFromChat) === '1';
-    chat.mirrorToChat = localStorage.getItem(constants.lsMirrorToChat) === '1';
-
     // send initial emoteMap
+    const emoteMap = JSON.parse(
+      localStorage.getItem(constants.lsEmoteMap) || '{}'
+    );
     socket.emit('updateEmoteMap', {
-      emoteNameToUrl: JSON.parse(
-        localStorage.getItem(constants.lsEmoteMap) || '{}'
-      ),
+      emoteNameToUrl: emoteMap,
     });
 
     const collabChannel = localStorage.getItem(constants.lsCollabChannel) || '';
@@ -351,8 +254,92 @@ export default function Home() {
       );
     }
 
+    const addToHistory = (text: string) => {
+      const curTextHistory = textHistory.current;
+      if (curTextHistory[curTextHistory.length - 1] !== text) {
+        curTextHistory.push(text);
+        if (curTextHistory.length >= 100) {
+          curTextHistory.shift();
+        }
+        textHistoryPos.current = curTextHistory.length;
+      }
+    };
+
+    sendSpeech.current = async (phrase: string, from_chat: boolean) => {
+      if (phrase.trim() === '') return;
+      socket.emit('phraseSend', {
+        phrase,
+        settings: {
+          speed: parseInt(
+            localStorage.getItem(constants.lsTextSpeed) || '75',
+            10
+          ),
+          fontSize: parseInt(
+            localStorage.getItem(constants.lsFontSize) || '48',
+            10
+          ),
+          fontColor: localStorage.getItem(constants.lsFontColor) || '#ffffff',
+          fontWeight: parseInt(
+            localStorage.getItem(constants.lsFontWeight) || '400',
+            10
+          ),
+          soundFileName: localStorage.getItem(constants.lsSoundFileName),
+          volume: textSoundMuted
+            ? 0
+            : parseFloat(localStorage.getItem(constants.lsVolumeName) || '50') /
+              100,
+          bubbleColor: localStorage.getItem(constants.lsBubbleColor) || '#000',
+        },
+      });
+      // post the same message in twitch chat
+      if (!from_chat && chat.mirrorToChat) {
+        chat.sendToChat(phrase);
+      }
+
+      // send to OBS window, which will forward it to the OBS window if open
+      window.electronAPI.sendPhraseOBSWindow(phrase);
+
+      // publish on collab chat if set
+      if (pubnub.current && collabChannel && collabBroadcast)
+        pubnub.current.post(phrase);
+
+      // play TTS
+      if (ttsActive && tts.current !== null) {
+        tts.current.queuePhrase(phrase, {
+          voiceLang,
+          voiceName,
+          voiceStyle,
+          voiceVolume,
+          voicePitch,
+          voiceRate,
+        });
+      }
+
+      addToHistory(phrase);
+    };
+
+    // update chat interaction handler, otherwise it will use an outdated version
+    chat.setOnChatEvent(sendSpeech.current);
+  }, [ttsActive, voiceStyle, voicePitch, voiceRate, textSoundMuted, socket]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechSendClicked = async (event: any) => {
+    event.preventDefault();
+    const { speech } = event.currentTarget.elements;
+    if (sendSpeech.current !== null)
+      await sendSpeech.current(speech.value, false);
+    speech.value = '';
+  };
+
+  useEffect(() => {
+    // currently this component only really udpates after the user comes back
+    // from the preferences page so it's fine to have this here for now
+    chat.updateIdentity(channelName, oAuthToken);
+    chat.mirrorFromChat =
+      localStorage.getItem(constants.lsMirrorFromChat) === '1';
+    chat.mirrorToChat = localStorage.getItem(constants.lsMirrorToChat) === '1';
+
     async function initTTS() {
-      // these can't change between renders
       const ttsSettings: TTSSettings = {
         apiKey: (await window.electronAPI.getAzureKey()) || '',
         region: localStorage.getItem(constants.lsAzureRegion) || '',
@@ -397,6 +384,9 @@ export default function Home() {
           // send updated cache data to main thread
           window.electronAPI.updateTTSCache(tts.current.cache.toJSON());
         }
+      }
+      if (pubnub.current) {
+        pubnub.current.stop();
       }
     };
     // ttsActive not included in deps array since we have a sep function for handling that
