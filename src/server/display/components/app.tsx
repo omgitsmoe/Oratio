@@ -140,7 +140,6 @@ function SpeechPhrase(props: SpeechPhraseProps) {
 
   // TODO Test for performance impact of reading settings on every input
   const { speed } = settings;
-  // TODO changing fontsize does not work!
   const { fontSize } = settings;
   const { fontColor } = settings;
   const { fontWeight } = settings;
@@ -174,7 +173,7 @@ function SpeechPhrase(props: SpeechPhraseProps) {
   useEffect(() => {
     if (!speechDisplay.current)
       throw new Error('speechDisplay not initialized');
-    speechDisplay.current.style.fontSize = fontSize.toString();
+    speechDisplay.current.style.fontSize = `${fontSize}px`;
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight.toString();
 
