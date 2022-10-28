@@ -9,16 +9,17 @@ export const lsMirrorFromChat = 'mirrorFromChat';
 export const lsMirrorToChat = 'mirrorToChat';
 
 export const lsCollabChannel = 'collabChannel';
-export const lsCollabNick = 'collabNickName';
 export const lsCollabListen = 'collabListen';
 export const lsCollabBroadcast = 'collabBroadcast';
 export const lsCollabUserId = 'collabUserId';
 export const lsCollabVolumeName = 'collabVolume';
 export const lsCollabTextSpeed = 'collabTextSpeed';
 export const lsCollabFontSize = 'collabFontSize';
-export const lsCollabFontColor = 'collabFontColor';
 export const lsCollabFontWeight = 'collabFontWeight';
 export const lsCollabSoundFileName = 'collabSoundFileName';
+// these can be set by the user and will be broadcasted to receivers
+export const lsCollabNick = 'collabNickName';
+export const lsCollabFontColor = 'collabFontColor';
 export const lsCollabBubbleColor = 'collabBubbleColor';
 
 export const lsVoiceStyle = 'ttsVoiceStyle';

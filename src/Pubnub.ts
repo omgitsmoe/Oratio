@@ -2,7 +2,13 @@ import Pubnub from 'pubnub';
 
 export type PubnubChatMessageEvent = {
   message: string;
-  nick: string;
+  userSettings: UserSettings;
+};
+
+export type UserSettings = {
+  nickName: string;
+  fontColor: string;
+  bubbleColor: string;
 };
 
 export default class PubnubChat {
@@ -12,7 +18,7 @@ export default class PubnubChat {
 
   #channel: string;
 
-  #nickName: string;
+  #userSettings: UserSettings;
 
   // currently not needed, since we don't allow this to change
   // #listen: boolean;
@@ -26,7 +32,7 @@ export default class PubnubChat {
     subscribeKey: string,
     userId: string,
     channel: string,
-    nickName: string,
+    userSettings: UserSettings,
     listen: boolean,
     broadcast: boolean,
     messageCallback: ((event: PubnubChatMessageEvent) => void) | null
@@ -39,7 +45,7 @@ export default class PubnubChat {
 
     this.#userId = userId;
     this.#channel = channel;
-    this.#nickName = nickName;
+    this.#userSettings = userSettings;
     // this.#listen = listen;
     this.#broadcast = broadcast;
     // NOTE: we need to pass a closure here so onMessage actually gets called on the
@@ -59,14 +65,22 @@ export default class PubnubChat {
       `msg ${message.message} by ${message.publisher} in channel ${message.channel}`
     );
     const msg: string = message.message;
-    const sepIdx = msg.indexOf(':');
-    const nick = msg.substring(0, sepIdx);
+    let lastSepIdx = msg.indexOf(':');
+    const nickName = msg.substring(0, lastSepIdx);
+    let sepIdx = msg.indexOf(':', lastSepIdx + 1);
+    const fontColor = msg.substring(lastSepIdx + 1, sepIdx);
+    lastSepIdx = sepIdx;
+    sepIdx = msg.indexOf(':', lastSepIdx + 1);
+    const bubbleColor = msg.substring(lastSepIdx + 1, sepIdx);
     // NOTE: assuming message length is at least one (since we don't allow to send
     // 0 char messages in the main message box)
     const actualMessage = msg.substring(sepIdx + 1);
     const isSelf = message.publisher === this.#userId;
     if (!isSelf && this.#messageCallback)
-      this.#messageCallback({ message: actualMessage, nick });
+      this.#messageCallback({
+        message: actualMessage,
+        userSettings: { nickName, fontColor, bubbleColor },
+      });
   }
 
   public set messageCallback(
@@ -103,7 +117,9 @@ export default class PubnubChat {
 
     try {
       this.#pubnub.publish({
-        message: `${this.#nickName}:${message}`,
+        message: `${this.#userSettings.nickName}:${
+          this.#userSettings.fontColor
+        }:${this.#userSettings.bubbleColor}:${message}`,
         channel: this.#channel,
       });
     } catch (err) {

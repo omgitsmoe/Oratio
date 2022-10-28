@@ -215,8 +215,10 @@ export default function Home() {
         console.log('passing on collab message');
         socket.emit('phraseSendCollab', {
           phrase: event.message,
-          nameTag: event.nick,
+          nameTag: event.userSettings.nickName,
           settings: {
+            fontColor: event.userSettings.fontColor,
+            bubbleColor: event.userSettings.bubbleColor,
             speed: parseInt(
               localStorage.getItem(constants.lsCollabTextSpeed) || '75',
               10
@@ -225,8 +227,6 @@ export default function Home() {
               localStorage.getItem(constants.lsCollabFontSize) || '48',
               10
             ),
-            fontColor:
-              localStorage.getItem(constants.lsCollabFontColor) || '#ffffff',
             fontWeight: parseInt(
               localStorage.getItem(constants.lsCollabFontWeight) || '400',
               10
@@ -239,8 +239,6 @@ export default function Home() {
               : parseFloat(
                   localStorage.getItem(constants.lsCollabVolumeName) || '0'
                 ) / 100,
-            bubbleColor:
-              localStorage.getItem(constants.lsCollabBubbleColor) || '#000',
           },
         });
       }
@@ -249,7 +247,13 @@ export default function Home() {
         process.env.PN_SUB,
         userId,
         collabChannel,
-        localStorage.getItem(constants.lsCollabNick) || '',
+        {
+          nickName: localStorage.getItem(constants.lsCollabNick) || '',
+          fontColor:
+            localStorage.getItem(constants.lsCollabFontColor) || '#fff',
+          bubbleColor:
+            localStorage.getItem(constants.lsCollabBubbleColor) || '#000',
+        },
         collabListen,
         collabBroadcast,
         collabMessage
