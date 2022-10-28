@@ -21,8 +21,9 @@ const useStyles = makeStyles(() =>
       overflow: 'hidden',
     }),
     text: () => ({
-      color: 'white',
-      fontSize: '3rem',
+      // both set individually on SpeechPhrase/Display
+      // color: 'white',
+      // fontSize: '3rem',
       fontFamily: "'Baloo Da 2', cursive",
       wordBreak: 'break-word',
     }),
@@ -32,12 +33,17 @@ const useStyles = makeStyles(() =>
       padding: '20px',
       border: '3px solid #a9a9a9',
       borderRadius: '8px',
+    }),
+    sepBubbles: {
+      marginTop: '5px',
+    },
+    bubbleContainter: {
       display: 'flex',
       flexDirection: 'column',
       position: 'absolute',
       bottom: 0,
       left: 0,
-    }),
+    },
     span: () => ({
       display: 'block',
       position: 'relative',
@@ -155,18 +161,19 @@ type SpeechPhraseProps = {
   message: string;
   settings: OnScreenSettings;
   nameTag?: string;
+  fontColor: string;
+  bubbleColor: string;
 };
 
 function SpeechPhrase(props: SpeechPhraseProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechDisplay = useRef<HTMLSpanElement | null>(null);
-  const { message, settings, nameTag } = props;
+  const { message, settings, nameTag, fontColor } = props;
   const classes = useStyles(props);
 
   // TODO Test for performance impact of reading settings on every input
   const { speed } = settings;
   const { fontSize } = settings;
-  const { fontColor } = settings;
   const { fontWeight } = settings;
   const { soundFileName } = settings;
 
@@ -328,13 +335,26 @@ function SpeechPhrase(props: SpeechPhraseProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <SpeechDisplay
-      ref={speechDisplay}
-      nameTag={nameTag}
-      settings={props.settings}
-    />
-  );
+  if (nameTag) {
+    // collab
+    return (
+      <div className={`${classes.bubble} ${classes.sepBubbles}`}>
+        <SpeechDisplay
+          ref={speechDisplay}
+          nameTag={nameTag}
+          settings={props.settings}
+        />
+      </div>
+    );
+  } else {
+    return (
+      <SpeechDisplay
+        ref={speechDisplay}
+        nameTag={nameTag}
+        settings={props.settings}
+      />
+    );
+  }
 }
 
 interface Phrase {
@@ -342,6 +362,8 @@ interface Phrase {
   key: string;
   runningId: number;
   nameTag?: string;
+  fontColor: string;
+  bubbleColor: string;
 }
 
 type State = {
@@ -390,14 +412,6 @@ export default function App(props: { collab: boolean }) {
     let result: State;
     switch (action.type) {
       case 'push':
-        // if we have the same name tag as the phrase before (that is still being shown)
-        // then don't show the nameTag by setting it to undefined
-        if (
-          state.phrases.length > 0 &&
-          action.phrase.nameTag ===
-            state.phrases[state.phrases.length - 1].nameTag
-        )
-          action.phrase.nameTag = undefined;
         result = {
           phrases: [...state.phrases, action.phrase],
           settings: action.settings,
@@ -471,13 +485,28 @@ export default function App(props: { collab: boolean }) {
 
   useEffect(() => {
     let runningId = 0;
+
+    // NOTE: this has to remain in the useEffect hook, since we use SSR and
+    // window will be undefined on the server
+    const params = new URLSearchParams(window.location.search);
+    const filterNick = params.get('nick');
+
     const eventName = collab ? 'collabPhraseRender' : 'phraseRender';
     socket.on(eventName, (data) => {
+      // skip other nameTags if we got passed a nickname to filter for in query params
+      if (collab && filterNick && data.nameTag !== filterNick) return;
       const key: string = uniqueHash();
       const message: string = data.phrase;
       dispatch({
         type: 'push',
-        phrase: { message, key, runningId, nameTag: data.nameTag },
+        phrase: {
+          message,
+          key,
+          runningId,
+          nameTag: collab ? data.nameTag : undefined,
+          fontColor: data.settings.fontColor,
+          bubbleColor: data.settings.bubbleColor,
+        },
         settings: data.settings,
       });
 
@@ -499,8 +528,8 @@ export default function App(props: { collab: boolean }) {
     <div className={classes.root}>
       <div
         className={`${
-          state.phrases.length <= 0 ? classes.hidden : classes.bubble
-        } ${classes.text}`}
+          state.phrases.length <= 0 ? classes.hidden : classes.bubbleContainter
+        } ${classes.text} ${collab ? '' : classes.bubble}`}
       >
         {state.phrases.map((phrase: Phrase) => {
           return (
@@ -511,6 +540,8 @@ export default function App(props: { collab: boolean }) {
               dispatchRef={wrappedDispatch}
               settings={state.settings}
               nameTag={phrase.nameTag}
+              fontColor={phrase.fontColor}
+              bubbleColor={phrase.bubbleColor}
             />
           );
         })}
