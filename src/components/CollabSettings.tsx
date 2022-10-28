@@ -88,6 +88,12 @@ export default function TTSSettings() {
   );
   const [nickNameError, setNickNameError] = React.useState('');
 
+  const [otherNickName, setOtherNickName] = React.useState('');
+  const [otherNickNameError, setOtherNickNameError] = React.useState('');
+  const [copyButtonText, setCopyButtonText] = React.useState(
+    t<string>('Copy!')
+  );
+
   function handleVolumeChange(
     _event: React.ChangeEvent<unknown>,
     newVolume: number | number[]
@@ -121,9 +127,20 @@ export default function TTSSettings() {
   const [listenCollab, setListenCollab] = React.useState(
     localStorage.getItem(lsCollabListen) === '1'
   );
+  function setListenCollabAndPersist(checked: boolean) {
+    const value = checked ? '1' : '0';
+    localStorage.setItem(lsCollabListen, value);
+    setListenCollab(checked);
+  }
+
   const [broadcastCollab, setBroadcastCollab] = React.useState(
     localStorage.getItem(lsCollabBroadcast) === '1'
   );
+  function setBroadcastCollabAndPersist(checked: boolean) {
+    const value = checked ? '1' : '0';
+    localStorage.setItem(lsCollabBroadcast, value);
+    setBroadcastCollab(checked);
+  }
 
   return (
     <MuiThemeProvider theme={theme}>
@@ -157,6 +174,9 @@ export default function TTSSettings() {
                       'Channel names are alphanumeric with a minimum of 3 and a maximum of ' +
                         '92 characters including the following special charachters "-_=@.!$#%&^;"'
                     );
+                    // can't listen AND broadcast without a valid channel
+                    setBroadcastCollabAndPersist(false);
+                    setListenCollabAndPersist(false);
                   } else {
                     setChannelNameError('');
                     localStorage.setItem(lsCollabChannel, trimmed);
@@ -180,10 +200,14 @@ export default function TTSSettings() {
                     setNickNameError(
                       'Nick names may only be a maximum of 15 characters long!'
                     );
+                    // can't broadcast without a valid nickname
+                    setBroadcastCollabAndPersist(false);
                   } else if (trimmed.indexOf(':') !== -1) {
                     setNickNameError(
                       'Nick names are not allowed to contain colons!'
                     );
+                    // can't broadcast without a valid nickname
+                    setBroadcastCollabAndPersist(false);
                   } else {
                     setNickNameError('');
                     localStorage.setItem(lsCollabNick, trimmed);
@@ -199,14 +223,17 @@ export default function TTSSettings() {
                     <Checkbox
                       id="listen-collab"
                       checked={listenCollab}
-                      disabled={!channelName || !!channelNameError}
+                      disabled={
+                        !channelName ||
+                        !!channelNameError ||
+                        !nickName ||
+                        !!nickNameError
+                      }
                       onChange={(
                         _event: React.ChangeEvent<HTMLInputElement>,
                         checked: boolean
                       ) => {
-                        const value = checked ? '1' : '0';
-                        localStorage.setItem(lsCollabListen, value);
-                        setListenCollab(checked);
+                        setListenCollabAndPersist(checked);
                       }}
                     />
                   }
@@ -220,14 +247,17 @@ export default function TTSSettings() {
                     <Checkbox
                       id="broadcast-collab"
                       checked={broadcastCollab}
-                      disabled={!channelName || !!channelNameError}
+                      disabled={
+                        !channelName ||
+                        !!channelNameError ||
+                        !nickName ||
+                        !!nickNameError
+                      }
                       onChange={(
                         _event: React.ChangeEvent<HTMLInputElement>,
                         checked: boolean
                       ) => {
-                        const value = checked ? '1' : '0';
-                        localStorage.setItem(lsCollabBroadcast, value);
-                        setBroadcastCollab(checked);
+                        setBroadcastCollabAndPersist(checked);
                       }}
                     />
                   }
@@ -239,7 +269,76 @@ export default function TTSSettings() {
               </FormGroup>
             </Grid>
           </Grid>
+          <p>{t('collab-channel-per-user-explanation')}</p>
+          <Grid
+            container
+            direction="row"
+            spacing={3}
+            style={{ marginBottom: '3px' }}
+          >
+            <Grid item xs={6}>
+              <TextField
+                className={classes.formControl}
+                id="obs-nickname"
+                fullWidth
+                label={t('Collab Display Nick Name')}
+                value={otherNickName}
+                error={otherNickNameError !== ''}
+                helperText={otherNickNameError}
+                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                  const trimmed = e.target.value.trim();
+                  if (trimmed.length > 15) {
+                    setOtherNickNameError(
+                      'Nick names may only be a maximum of 15 characters long!'
+                    );
+                  } else if (trimmed.indexOf(':') !== -1) {
+                    setOtherNickNameError(
+                      'Nick names are not allowed to contain colons!'
+                    );
+                  } else {
+                    setOtherNickNameError('');
+                  }
+                  setCopyButtonText(t('Copy!'));
+                  setOtherNickName(trimmed);
+                }}
+              />
+            </Grid>
+            <Grid item xs={2}>
+              <Button
+                id="copy-collab-user-obs"
+                variant="contained"
+                className={classes.button}
+                color="primary"
+                disabled={!otherNickName || !!otherNickNameError}
+                onClick={() => {
+                  window.electronAPI.copyToClipboard(
+                    `http://localhost:4563/collab?nick=${otherNickName}`
+                  );
+                  setCopyButtonText(t('Copied!'));
+                }}
+              >
+                {copyButtonText}
+              </Button>
+            </Grid>
+          </Grid>
           <h2>{t('Style')}</h2>
+          <p>{t('collab-user-settings-explanation')}</p>
+          <Grid
+            container
+            direction="row"
+            spacing={3}
+            style={{ marginBottom: '8px' }}
+          >
+            <Grid item xs={6}>
+              <FontColorPicker localStorageName={lsCollabFontColor} />
+            </Grid>
+            <Grid item xs={6}>
+              <BubbleBackgroundColorPicker
+                localStorageName={lsCollabBubbleColor}
+              />
+            </Grid>
+          </Grid>
+          <p>{t('collab-general-settings-explanation')}</p>
           <Grid
             container
             direction="row"
@@ -283,14 +382,6 @@ export default function TTSSettings() {
             </Grid>
             <Grid item xs={6}>
               <FontBoldSlider localStorageName={lsCollabFontWeight} />
-            </Grid>
-            <Grid item xs={6}>
-              <FontColorPicker localStorageName={lsCollabFontColor} />
-            </Grid>
-            <Grid item xs={6}>
-              <BubbleBackgroundColorPicker
-                localStorageName={lsCollabBubbleColor}
-              />
             </Grid>
           </Grid>
           <Grid

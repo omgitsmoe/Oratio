@@ -21,6 +21,7 @@ import {
   dialog,
   IpcMainEvent,
   IpcMainInvokeEvent,
+  clipboard,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -392,3 +393,7 @@ ipcMain.handle(
     return success;
   }
 );
+
+ipcMain.on('copyToClipboard', (_event: IpcMainEvent, value: string) => {
+  clipboard.writeText(value);
+});

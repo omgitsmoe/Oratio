@@ -61,4 +61,16 @@ that channel:`,
     "same channel. Since the API keys can't be hidden in an installed application " +
     "DO NOT SHARE the channel name with untrusted people and don't pick a name that's" +
     ' trivial to guess!',
+  'collab-channel-per-user-explanation':
+    'If you want to have a separate browser source for every Oratio user, you can ' +
+    'type in the nickname they\'re using below and click "Copy!". You can then ' +
+    'paste the link into OSB as a new browser source, where only the messages of that ' +
+    'user will be shown. If they change their nickname, you will also have to change ' +
+    'the browser source!',
+  'collab-user-settings-explanation':
+    'The text color and the speech bubble color below will be how your messages ' +
+    'are styled when you send messages to another Oratio user:',
+  'collab-general-settings-explanation':
+    'Below are the settings that determine the look and sound of all the messages ' +
+    'that get sent to your own Oratio over the collab functionality:',
 };

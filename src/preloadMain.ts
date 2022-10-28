@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTTSCache: () => ipcRenderer.invoke('getTTSCache'),
 
   updateTTSCache: (json: string) => ipcRenderer.send('updateTTSCache', json),
+
+  copyToClipboard: (value: string) =>
+    ipcRenderer.send('copyToClipboard', value),
 });
 
 // NOTE: since we load the OBS window over react-dom-router as part of the
@@ -139,6 +142,8 @@ declare global {
       getTTSCache: () => Promise<string | undefined>;
 
       updateTTSCache: (json: string) => void;
+
+      copyToClipboard: (value: string) => void;
     };
 
     mainToOBS: {
