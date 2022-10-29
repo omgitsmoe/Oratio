@@ -21,21 +21,12 @@ module.exports = (api) => {
   return {
     presets: [
       // @babel/preset-env will automatically target our browserslist targets
-      [
-        require('@babel/preset-env'),
-        {
-          useBuiltIns: 'usage',
-          // caller.target will be the same as the target option from webpack
-          targets: api.caller((caller) => caller && caller.target === 'node')
-            ? { node: '12.18' }
-            : // this fixes import/export only allowed for modules error for the client bundle
-              // chrome 87 is both the version thats used in electron11 as well as OBS27
-              { chrome: '87' },
-          corejs: '3.10.1',
-        },
-      ],
+      [require('@babel/preset-env')],
       require('@babel/preset-typescript'),
-      [require('@babel/preset-react'), { development, runtime: 'automatic' }],
+      // NOTE: runtime: 'automatic' did not work with the separate server/client bundle
+      // even manually importing React did not fix it,
+      // error was: ai.jsxDEV is not a function
+      [require('@babel/preset-react'), { development }],
     ],
     plugins: [
       // Stage 0

@@ -10,7 +10,7 @@ const DEFAULT_TIMEOUT = 4000;
 
 const useStyles = makeStyles(() =>
   createStyles({
-    root: () => ({
+    root: {
       height: '100%',
       width: '100%',
       position: 'absolute',
@@ -19,14 +19,14 @@ const useStyles = makeStyles(() =>
       // so we don't get a scrollbar; this will not actually hide any content
       // since it would've been outside the window anyway
       overflow: 'hidden',
-    }),
-    text: () => ({
+    },
+    text: {
       // both set individually on SpeechPhrase/Display
       // color: 'white',
       // fontSize: '3rem',
       fontFamily: "'Baloo Da 2', cursive",
       wordBreak: 'break-word',
-    }),
+    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bubble: (props: any) => ({
       backgroundColor: props.bubbleColor,
@@ -44,10 +44,10 @@ const useStyles = makeStyles(() =>
       bottom: 0,
       left: 0,
     },
-    span: () => ({
+    span: {
       display: 'block',
       position: 'relative',
-    }),
+    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     nameTag: (props: any) => ({
       top: -6 + props.fontSize / -8,
@@ -70,9 +70,9 @@ const useStyles = makeStyles(() =>
     emoji: {
       verticalAlign: 'middle',
     },
-    hidden: () => ({
+    hidden: {
       display: 'none',
-    }),
+    },
     emote: {
       display: 'inline-block',
       width: 'auto',
@@ -169,7 +169,10 @@ function SpeechPhrase(props: SpeechPhraseProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechDisplay = useRef<HTMLSpanElement | null>(null);
   const { message, settings, nameTag, fontColor } = props;
-  const classes = useStyles(props);
+  const classes = useStyles({
+    bubbleColor: props.bubbleColor,
+    fontSize: props.settings.fontSize,
+  });
 
   // TODO Test for performance impact of reading settings on every input
   const { speed } = settings;
@@ -192,7 +195,6 @@ function SpeechPhrase(props: SpeechPhraseProps) {
   const emotes = [...message.matchAll(/\w+/g)].filter(
     (e) => e[0] in emoteNameToUrl
   );
-  console.log(emoteNameToUrl);
 
   const timePerChar = 40; // avg reading speed is 25 letters/s -> 40ms/letter
   const clamp = (num: number, min: number, max: number) =>
