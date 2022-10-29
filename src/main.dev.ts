@@ -124,7 +124,7 @@ const createWindow = async () => {
   }
 
   // TODO remove
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   /**
    * Add event listeners...
@@ -348,7 +348,7 @@ ipcMain.on('openOBSWindow', () => {
     }
 
     // TODO remove
-    obsWindow.webContents.openDevTools();
+    // obsWindow.webContents.openDevTools();
 
     obsWindow.on('closed', () => {
       obsWindow = undefined;
