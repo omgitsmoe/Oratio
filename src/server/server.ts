@@ -56,7 +56,7 @@ app.get('/', (req: express.Request, res: express.Response) => {
   res.render('display', { assets, component, css, isDevEnv, collab: false });
 });
 
-app.get('/collab', (req: express.Request, res: express.Response) => {
+app.get('/collab', (_req: express.Request, res: express.Response) => {
   const sheets = new ServerStyleSheets();
   const component = ReactDOMServer.renderToString(
     sheets.collect(React.createElement(App, { collab: true }))

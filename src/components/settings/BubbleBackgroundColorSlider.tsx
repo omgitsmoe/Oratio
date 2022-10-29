@@ -5,7 +5,9 @@ import ColorLensIcon from '@material-ui/icons/ColorLens';
 import { SketchPicker } from 'react-color';
 import { useTranslation } from 'react-i18next';
 
-export default function BubbleBackgroundColorPicker(props: { localStorageName: string }) {
+export default function BubbleBackgroundColorPicker(props: {
+  localStorageName: string;
+}) {
   const { t } = useTranslation();
   const { localStorageName } = props;
   const initColor = localStorage.getItem(localStorageName) || '#ffffff';
