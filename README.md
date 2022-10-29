@@ -55,7 +55,7 @@ Once successful the boxes below can be checked to mirror messages from or to cha
 
 ### Emote support
 
-Oratio supports displaying Twitch/BTTV/FFZ/7TV emotes as well as emojis.
+Oratio supports displaying Twitch/BTTV/FFZ/7TV emotes as well as emojis (e.g. `:smile:`).
 To download these emotes, you first need to authorize Oratio with Twitch
 (see [above](#Twitch-chat-support)).
 
@@ -63,9 +63,11 @@ Then you can go to `Preferences` -> `Manage emotes`.
 Importing global emotes can be started using the `Refresh Global Emotes!` button.
 `Refresh Your Channel Emotes!` will download all your channel emotes including BTTV/FFZ/7TV.
 Additionally you can type any valid channel name below that and download their channel emotes
-to use them in Oratio.
+(just Twitch) to use them in Oratio.
 
 ![manage emotes](https://user-images.githubusercontent.com/60219950/197672122-85f4e513-90bd-4f1d-bb17-37a885008360.png)
+
+When typing in the text field you can use the `Tab` key to autocomplete emote names.
 
 ### Text-to-Speech support
 
@@ -118,10 +120,10 @@ More TTS settings will appear below, where you can select more advanced options:
   - Rate: Speaking speed
 
 **PRICING ALERT**: Using these advanced options (style, pitch and rate) will incur additional costs
-or rather use up more characters. The characters need to set these options, if they are not at
+or rather use up more characters. The characters needed to set these options, if they are not at
 their default value (style: `none`, pitch: `0`, rate: `1`), will be billed by Azure:
 
-- `Style`: at least 49 characters per message (using shortes voice style `sad`)
+- `Style`: at least 49 characters per message (using shortest voice style `sad`)
 - 20 characters shared between `Pitch` and `Rate`
   - + at least 10 characters for using `Pitch`
   - + at least  8 characters for using `Rate`
@@ -141,6 +143,40 @@ Make sure **not** to bind the **Return** key or **single charachters** that are 
 Then you can hit `Save Binding` and assign a configutation from the drop-down.
 Using the key binding on the home screen will load the selected TTS configuration.
 (This can be used to e.g. quickly switch between emotions like cheerful, sad and angry.)
+
+### Collab
+
+To support collabs between (speech impaired) streamers, Oratio provides a way
+for other Oratio users to send messages to a separate on-screen display.
+These will be shown on a different browser source running at
+http://localhost:4563/collab.
+
+In order to send/receive messages you need to join the same channel on
+the `Preferences` -> `Collab Settings` page and activate
+the listen (needs a channel name set) and/or broadcast (needs a nickname set) checkboxes.
+Since Oratio is an installed application without a master server, there
+is no way to secure the channels, but another user can't find your channel
+unless they make a lucky guess. Thus pick a **non-trivial channel name**
+and **only share** it with **trusted** people.
+Otherwise another user might be able to join your channel and send messages
+to/listen to messages from your Oratio instance.
+
+The same settings that are available for the regular on-screen display
+can also be adjusted for the collab display.
+There is one major difference though, the text color and speech bubble color
+setting will apply to the messages that **you sent** and they will
+determine how they look **on the receiving** Oratio instance.
+
+The **browser source** URL above will show all the user messages on the same
+"display" with name tags. You might want a **separate** browser source **per user**,
+so that you e.g. can position them directly above a user on your stream.
+Go to the `Collab Settings` page and enter the name, of the user that you want the browser 
+source for, into the textfield with the label "Collab Display Nick Name" and hit `Copy!`.
+Then you can paste the link into OBS as a new browser source.  
+**REMEMBER: if the user changes their name, you will also have to edit the browser source!**
+
+*NOTE: Emotes will only be shown if they're available on the receiving Oratio instance!
+Otherwise they will show up as regular text.*
 
 ## Starting Development
 
