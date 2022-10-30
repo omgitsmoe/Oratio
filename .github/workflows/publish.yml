@@ -48,5 +48,7 @@ jobs:
           # This is used for uploading release assets to github
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: electron-builder
+          PN_PUB: ${{ secrets.pnPub }}
+          PN_SUB: ${{ secrets.pnSub }}
         run: |
           yarn postinstall && yarn build && yarn electron-builder --publish always --win

@@ -7,6 +7,7 @@ import fs from 'fs';
 import webpack from 'webpack';
 import webpackPaths from './webpack.paths';
 import { dependencies as externals } from '../../src/package.json';
+import { env } from 'process';
 
 
 export const getCSP = () => {
@@ -31,6 +32,8 @@ let hidden;
 if (fs.existsSync(hiddenPath)) {
   const hiddenText = fs.readFileSync(hiddenPath);
   hidden = JSON.parse(hiddenText);
+} else if (env.PN_PUB) {
+  hidden = { pnPub: env.PN_PUB, pnSub: env.PN_SUB };
 }
 
 export default {
