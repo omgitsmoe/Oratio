@@ -491,12 +491,19 @@ export default function App(props: { collab: boolean }) {
     // NOTE: this has to remain in the useEffect hook, since we use SSR and
     // window will be undefined on the server
     const params = new URLSearchParams(window.location.search);
-    const filterNick = params.get('nick');
+    let filterNick = params.get('nick');
+    if (filterNick) filterNick = filterNick.toLowerCase();
 
     const eventName = collab ? 'collabPhraseRender' : 'phraseRender';
     socket.on(eventName, (data) => {
       // skip other nameTags if we got passed a nickname to filter for in query params
-      if (collab && filterNick && data.nameTag !== filterNick) return;
+      if (
+        collab &&
+        filterNick &&
+        data.nameTag &&
+        data.nameTag.toLowerCase() !== filterNick
+      )
+        return;
       const key: string = uniqueHash();
       const message: string = data.phrase;
       dispatch({
