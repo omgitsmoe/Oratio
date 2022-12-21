@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   getAzureKey: () => ipcRenderer.invoke('getAzureKey'),
 
-  sendAzureKey: (key: string) => ipcRenderer.send('sendAzureKey', key),
+  sendAzureKey: (key: string) => ipcRenderer.send('setAzureKey', key),
 
   openOBSWindow: () => ipcRenderer.send('openOBSWindow'),
 
