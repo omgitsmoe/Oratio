@@ -1276,13 +1276,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uiohook-napi@npm:^1.5.0":
+"uiohook-napi@npm:1.5.0":
   version: 1.5.0
   resolution: "uiohook-napi@npm:1.5.0"
   dependencies:
     node-gyp: latest
     node-gyp-build: 4.x.x
   checksum: bc1ab004d247e49abb462d5209f13e8ad070a47cbc9eeca11281038dcaabbc298a8af5ad295bbeed0ca99d9858c7c33c4a9f8afbf0ba21f142e78b53d684cc74
+  languageName: node
+  linkType: hard
+
+"uiohook-napi@patch:uiohook-napi@npm%3A1.5.0#./.yarn/patches/uiohook-napi-npm-1.5.0-3b358779be.patch::locator=oratio-electron%40workspace%3A.":
+  version: 1.5.0
+  resolution: "uiohook-napi@patch:uiohook-napi@npm%3A1.5.0#./.yarn/patches/uiohook-napi-npm-1.5.0-3b358779be.patch::version=1.5.0&hash=a9d02d&locator=oratio-electron%40workspace%3A."
+  dependencies:
+    node-gyp: latest
+    node-gyp-build: 4.x.x
+  checksum: 539a23d05a6dbd6bfcb31843798b53e95dca4b4f935af1e135abc8bb27a6fd8c5a6c55b7a6c43dd417e71d2521123b2fc583ba64985b6a47d49fab5e53366ed3
   languageName: node
   linkType: hard
 

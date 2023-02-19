@@ -28,6 +28,7 @@ import log from 'electron-log';
 import keytar from 'keytar';
 import * as fs from 'fs';
 import openExplorer from 'open-file-explorer';
+import { uIOhook, UiohookKey } from 'uiohook-napi';
 import MenuBuilder from './menu';
 import TwitchAuth from './TwitchAuth';
 import {
@@ -36,6 +37,7 @@ import {
   importEmoteLibFromDisk,
   exportEmoteLib,
 } from './EmoteLib';
+import { uioEventToElectronKeyCode, shiftPressed } from './utils';
 
 export default class AppUpdater {
   constructor() {
@@ -48,6 +50,10 @@ export default class AppUpdater {
 // app.commandLine.appendSwitch('disable-gpu-compositing');
 // app.commandLine.appendSwitch('disable-gpu');
 let mainWindow: BrowserWindow | null = null;
+let ioEventsInitialized = false;
+let ioIsHooked = false;
+const isMac = process.platform === 'darwin';
+const controlKeyStr = isMac ? 'command' : 'control';
 const isDevEnv = process.env.NODE_ENV === 'development';
 
 const RESOURCES_PATH = app.isPackaged
@@ -149,7 +155,7 @@ const createWindow = async () => {
     if (cacheJSON) fs.writeFileSync(cacheFile, cacheJSON);
 
     // mainWindow = null;
-    if (process.platform !== 'darwin') {
+    if (!isMac) {
       app.quit();
     }
     globalShortcut.unregisterAll();
@@ -169,10 +175,104 @@ const createWindow = async () => {
   new AppUpdater();
 };
 
+function registerUIHookEvents() {
+  uIOhook.on('keydown', (e) => {
+    // don't send modifier keys by themselves
+    if (
+      e.keycode === UiohookKey.Shift ||
+      e.keycode === UiohookKey.ShiftRight ||
+      e.keycode === UiohookKey.Alt ||
+      e.keycode === UiohookKey.AltRight ||
+      e.keycode === UiohookKey.Ctrl ||
+      e.keycode === UiohookKey.CtrlRight ||
+      e.keycode === UiohookKey.Meta ||
+      e.keycode === UiohookKey.MetaRight
+    ) {
+      return;
+    }
+    let keyCodeStr = uioEventToElectronKeyCode(e);
+    const modifiers: Electron.InputEvent['modifiers'] = [];
+    const isSingleChar = keyCodeStr.length === 1;
+    // add modfiers that are currently held down
+    // NOTE: modifiers accepted by sendInputEvent differ from those mentioned
+    // in https://www.electronjs.org/docs/latest/api/accelerator
+    if (e.altKey) {
+      modifiers.push('alt');
+    }
+    if (e.ctrlKey) {
+      modifiers.push(controlKeyStr);
+    }
+    if (e.shiftKey) {
+      modifiers.push('shift');
+      // non-alpha shift mapping (numbers, ;'\[] etc.)
+      if (isSingleChar) {
+        keyCodeStr = shiftPressed(keyCodeStr);
+      }
+    } else if (isSingleChar) {
+      // no shift pressed -> lowercase (electron accelerators [key 'codes'] are upppercase by default)
+      keyCodeStr = keyCodeStr.toLowerCase();
+    }
+    if (e.metaKey) {
+      modifiers.push('meta');
+    }
+
+    console.log('sending code:', keyCodeStr, 'mods:', modifiers);
+    // emulate keypressed by sending keydown, char then keyup
+    // NOTE: apparently needs to happen exactly in this order
+    mainWindow?.webContents.sendInputEvent({
+      type: 'keyDown',
+      modifiers,
+      keyCode: keyCodeStr,
+    });
+    // 'char' expects the actual character (respecting kb layout)
+    // TODO: respect kb layout
+    mainWindow?.webContents.sendInputEvent({
+      type: 'char',
+      modifiers,
+      // sending space does not work, needs literal ' '
+      keyCode: keyCodeStr === 'Space' ? ' ' : keyCodeStr,
+    });
+    mainWindow?.webContents.sendInputEvent({
+      type: 'keyUp',
+      modifiers,
+      keyCode: keyCodeStr,
+    });
+    console.log('DONE sending input');
+
+    if (e.keycode === UiohookKey.Escape) {
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      toggleIOHook();
+    }
+  });
+
+  // uIOhook.on('keyup', (e) => {
+  //   const keyCodeStr = uioEventToElectronKeyCode(e);
+  //   mainWindow?.webContents.sendInputEvent({
+  //     type: 'keyUp',
+  //     keyCode: keyCodeStr,
+  //   });
+  //   mainWindow?.webContents.
+  // });
+}
+
+function toggleIOHook() {
+  if (!ioIsHooked) {
+    if (!ioEventsInitialized) {
+      registerUIHookEvents();
+      ioEventsInitialized = true;
+    }
+    uIOhook.start();
+    ioIsHooked = true;
+  } else {
+    uIOhook.stop();
+    ioIsHooked = false;
+  }
+}
+
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
-  if (process.platform !== 'darwin') {
+  if (!isMac) {
     app.quit();
   }
   globalShortcut.unregisterAll();
@@ -192,8 +292,13 @@ app
           mainWindow?.hide();
         }
       } else {
-        mainWindow?.show();
+        // mainWindow?.show();
+        mainWindow?.focus();
       }
+    });
+
+    globalShortcut.register('CommandOrControl+L', () => {
+      toggleIOHook();
     });
 
     // start our server in a separate process to keep main/server performance indipendent
