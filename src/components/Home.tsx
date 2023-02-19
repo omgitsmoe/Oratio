@@ -459,6 +459,11 @@ export default function Home() {
       textField.value =
         text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
       textField.selectionStart = tabCompleteStart + option.length;
+      textField.selectionEnd = tabCompleteStart + option.length;
+      // cursor position (selectionStart) might be outside of the visible area
+      // re-focusing will scroll it into view properly
+      textField.blur();
+      textField.focus();
     }
 
     if (event.key === 'ArrowUp') {
