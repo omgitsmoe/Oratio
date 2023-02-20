@@ -484,6 +484,102 @@ export default function Home() {
     }
   }
 
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const textRef: React.MutableRefObject<HTMLDivElement | null> = useRef(null);
+  const [textFocused, setTextFocused] = React.useState(false);
+  const caretPos = useRef(-1);
+  useEffect(() => {
+    const removeAt = (str: string, at: number): string => {
+      if (at >= 0 && at < str.length) {
+        return str.substring(0, at) + str.substring(at + 1);
+      } else {
+        return str;
+      }
+    };
+    const insertAt = (str: string, at: number, insert: string): string => {
+      if (at < 0 || at > str.length) throw new Error('at out of string bounds');
+      return str.substring(0, at) + insert + str.substring(at);
+    };
+    const afterInputChanged = () => {
+      // NOTE: called on keyup event on the window, so we assume here that
+      // the input element already handled the event (since events "bubble up")
+      // (this only works since we __always__ send the events in the order up, char, down)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const input = inputRef.current!;
+
+      // add the caret
+      const pos = input.selectionStart;
+      if (pos === null) return;
+      // NOTE: setting the input field's value sets the internal cursor (selectionStart)
+      // to the end of the text
+      input.value = insertAt(inputRef.current!.value, pos, '|');
+      // -> ajdust internal cursor
+      input.setSelectionRange(pos + 1, pos + 1);
+      caretPos.current = pos;
+
+      // cursor position (selectionStart) might be outside of the visible area
+      // re-focusing will scroll it into view properly
+      input.blur();
+      input.focus();
+    };
+    const onInputChanged = () => {
+      // called on keydown
+      if (inputRef.current) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const input = inputRef.current!;
+        if (caretPos.current > -1) {
+          const cursorPosBefore = input.selectionStart ?? 1;
+          // whether the internal cursor will take the caret's old position
+          // (when caret was at the end) or one to the left (caret not at end)
+          // const delta = caretPos.current === (input.value.length - 1) ? 0 : 1;
+          // caret present -> remove, then input will be applied
+          input.value = removeAt(input.value, caretPos.current);
+          // NOTE: setting the input field's value sets the internal cursor (selectionStart)
+          // to the end of the text
+          // -> adjust input's internal cursor position
+          input.setSelectionRange(cursorPosBefore - 1, cursorPosBefore - 1);
+          caretPos.current = -1;
+        }
+      }
+    };
+
+    window.electronAPI.onStartGlobalInputCapture(() => {
+      if (inputRef.current) {
+        // to make sure input events get sent to the textfield when capturing
+        // input globally
+        inputRef.current.focus();
+        // so user can start typing a new message
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        inputRef.current!.select();
+        // to actually show the cursor
+        setTextFocused(true);
+
+        // removes the current caret if present
+        // can't use beforeinput since it doesn't fire on arrow keys etc.
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        inputRef.current!.addEventListener('keydown', onInputChanged);
+        // events bubble up, so window/document would be the last to receive it
+        // -> input has already processed event
+        // (we know there will be a keyup for every key since we __always__ send
+        // the events in the order up, char, down)
+        window.addEventListener('keyup', afterInputChanged);
+      }
+    });
+    window.electronAPI.onStopGlobalInputCapture(() => {
+      inputRef.current?.removeEventListener('keydown', onInputChanged);
+      window.removeEventListener('keyup', afterInputChanged);
+      if (inputRef.current) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const input = inputRef.current!;
+        if (caretPos.current > -1) {
+          input.value = removeAt(input.value, caretPos.current);
+        }
+      }
+      setTextFocused(false);
+      caretPos.current = -1;
+    });
+  }, []);
+
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
@@ -501,7 +597,17 @@ export default function Home() {
                   label={t('Speech')}
                   variant="outlined"
                   onKeyDown={handleTextBoxKeypress}
+                  inputRef={inputRef}
+                  ref={textRef}
                   fullWidth
+                  focused={textFocused}
+                  inputProps={{
+                    onFocus: () => setTextFocused(true),
+                    onBlur: () => setTextFocused(false),
+                  }}
+                  onFocus={() => setTextFocused(true)}
+                  // e.g. fired when user click outside of element
+                  onBlur={() => setTextFocused(false)}
                   autoFocus
                 />
               </Grid>

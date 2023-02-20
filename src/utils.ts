@@ -62,8 +62,6 @@ export function uioEventToElectronKeyCode(e: UiohookKeyboardEvent): string {
     result = uioCodeToStr[e.keycode];
   }
 
-  console.log('conv: ', result);
-
   return result;
 }
 

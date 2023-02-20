@@ -158,6 +158,8 @@ const createWindow = async () => {
     if (!isMac) {
       app.quit();
     }
+    if (ioIsHooked) uIOhook.stop();
+
     globalShortcut.unregisterAll();
   });
 
@@ -216,7 +218,6 @@ function registerUIHookEvents() {
       modifiers.push('meta');
     }
 
-    console.log('sending code:', keyCodeStr, 'mods:', modifiers);
     // emulate keypressed by sending keydown, char then keyup
     // NOTE: apparently needs to happen exactly in this order
     mainWindow?.webContents.sendInputEvent({
@@ -226,33 +227,27 @@ function registerUIHookEvents() {
     });
     // 'char' expects the actual character (respecting kb layout)
     // TODO: respect kb layout
+    let charStr = keyCodeStr;
+    // sending space does not work, needs literal ' '
+    if (keyCodeStr === 'Space') charStr = ' ';
+    // same for enter/return
+    if (keyCodeStr === 'Return') charStr = '\u000d';
     mainWindow?.webContents.sendInputEvent({
       type: 'char',
       modifiers,
-      // sending space does not work, needs literal ' '
-      keyCode: keyCodeStr === 'Space' ? ' ' : keyCodeStr,
+      keyCode: charStr,
     });
     mainWindow?.webContents.sendInputEvent({
       type: 'keyUp',
       modifiers,
       keyCode: keyCodeStr,
     });
-    console.log('DONE sending input');
 
     if (e.keycode === UiohookKey.Escape) {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       toggleIOHook();
     }
   });
-
-  // uIOhook.on('keyup', (e) => {
-  //   const keyCodeStr = uioEventToElectronKeyCode(e);
-  //   mainWindow?.webContents.sendInputEvent({
-  //     type: 'keyUp',
-  //     keyCode: keyCodeStr,
-  //   });
-  //   mainWindow?.webContents.
-  // });
 }
 
 function toggleIOHook() {
@@ -262,9 +257,11 @@ function toggleIOHook() {
       ioEventsInitialized = true;
     }
     uIOhook.start();
+    mainWindow?.webContents.send('onStartGlobalInputCapture');
     ioIsHooked = true;
   } else {
     uIOhook.stop();
+    mainWindow?.webContents.send('onStopGlobalInputCapture');
     ioIsHooked = false;
   }
 }

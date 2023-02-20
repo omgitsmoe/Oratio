@@ -61,6 +61,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   copyToClipboard: (value: string) =>
     ipcRenderer.send('copyToClipboard', value),
+
+  onStartGlobalInputCapture: (callback: () => void) =>
+    ipcRenderer.on('onStartGlobalInputCapture', callback),
+  onStopGlobalInputCapture: (callback: () => void) =>
+    ipcRenderer.on('onStopGlobalInputCapture', callback),
 });
 
 // NOTE: since we load the OBS window over react-dom-router as part of the
@@ -144,6 +149,9 @@ declare global {
       updateTTSCache: (json: string) => void;
 
       copyToClipboard: (value: string) => void;
+
+      onStartGlobalInputCapture: (callback: () => void) => void;
+      onStopGlobalInputCapture: (callback: () => void) => void;
     };
 
     mainToOBS: {
