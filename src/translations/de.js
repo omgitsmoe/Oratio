@@ -19,8 +19,8 @@ export default {
   'Reload emotes explanation': `Beim neu Laden der Emotes wird nur die "Datenbank" \
 neu eingelesen, es wird nicht wie bei alten Versionen neue Benutzer-Emotes von \
 der Festplatte.`,
-  'Clear emotes explanation': `Das Zurücksetzen der Emotes leert nur die "Datenbank" im Speicher, es werden \
-keine Dateien gelöscht!`,
+  'Clear emotes explanation': `ACHTUNG: Das Zurücksetzen der Emotes leert die gesamte Emote-"Datenbank", nur \
+die Emote-Dateien selber verbleiben auf der Festplatte!`,
   'Importing emotes': 'Emotes importieren',
   'Import emotes explanation': `Um existierende Twitch/BTTV/FFZ/7TV Emotes herunterladen \
 zu können, muss Oratio zuvor bei den Haupteinstellungen autorisiert worden sein. \

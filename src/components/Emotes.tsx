@@ -5,7 +5,8 @@ import {
   createStyles,
   MuiThemeProvider,
 } from '@material-ui/core/styles';
-import { Button, Grid } from '@material-ui/core';
+import { Button, Grid, IconButton } from '@material-ui/core';
+import DeleteIcon from '@material-ui/icons/Delete';
 import TextField from '@material-ui/core/TextField';
 import red from '@material-ui/core/colors/red';
 import { Link } from 'react-router-dom';
@@ -13,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import * as Theme from './Theme';
 import { Emote } from './Emote';
 import { lsEmoteMap, lsTwitchAuth, lsTwitchChannel } from '../constants';
+import { dialog } from 'electron';
 
 export const emoteNameToUrl: { [key: string]: string } = {};
 export const lowercaseToEmoteName: { [key: string]: string } = {};
@@ -188,6 +190,19 @@ export default function Emotes() {
     window.electronAPI.startEmoteDownload(channelName, channel, global);
   }
 
+  const onEmoteRemoved = async (name: string) => {
+    // TODO make this prettier
+    const answer = confirm(`Delete emote ${name}?`);
+    if (answer) {
+      delete emoteNameToUrl[name];
+      delete lowercaseToEmoteName[name.toLowerCase()];
+      localStorage.setItem(lsEmoteMap, JSON.stringify(emoteNameToUrl));
+      window.electronAPI.exportEmoteMap(emoteNameToUrl);
+      // not efficient since all emotes get re-rendered TODO
+      forceUpdate();
+    }
+  };
+
   useEffect(() => {
     // do this here, so we don't have multiple event listeners
     window.electronAPI.onEmoteDownloadProgress(
@@ -265,10 +280,18 @@ export default function Emotes() {
             className={classes.button}
             style={{ backgroundColor: red[300] }}
             onClick={async () => {
-              clearObject(emoteNameToUrl);
-              clearObject(lowercaseToEmoteName);
-              localStorage.setItem(lsEmoteMap, JSON.stringify(emoteNameToUrl));
-              forceUpdate();
+              // TODO make this prettier
+              const answer = confirm(`Clear all emotes (not recoverable!)?`);
+              if (answer) {
+                clearObject(emoteNameToUrl);
+                clearObject(lowercaseToEmoteName);
+                localStorage.setItem(
+                  lsEmoteMap,
+                  JSON.stringify(emoteNameToUrl)
+                );
+                window.electronAPI.exportEmoteMap(emoteNameToUrl);
+                forceUpdate();
+              }
             }}
           >
             {t('Clear emotes')}
@@ -403,6 +426,15 @@ export default function Emotes() {
                     <td>{name}</td>
                     <td>
                       <Emote emoteName={name} emoteNameToUrl={emoteNameToUrl} />
+                      <IconButton
+                        aria-label="delete"
+                        onClick={() => onEmoteRemoved(name)}
+                      >
+                        <DeleteIcon
+                          aria-label="delete"
+                          style={{ color: red[500] }}
+                        />
+                      </IconButton>
                     </td>
                   </tr>
                 ))}

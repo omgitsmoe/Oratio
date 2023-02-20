@@ -21,7 +21,7 @@ export default {
 the emotes folder from a backup. It will not load custom emotes from disk \
 like in previous versions!`,
   'Clear emotes explanation':
-    'Clearing emotes will only clear them from the "database", they will remain on disk!',
+    'ATTENTION: Clearing emotes, will remove all emotes in the database, while only the files will stay on disk!',
   'Importing emotes': 'Importing emotes',
   'Import emotes explanation': `To import existing Twitch/BTTV/FFZ/7TV emotes you need to authorize \
 Oratio on the main settings page and then use one of the buttons below to \
