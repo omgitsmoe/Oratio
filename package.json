@@ -261,9 +261,9 @@
     "universal-emoji-parser": "^1.0.6"
   },
   "devEngines": {
-    "node": ">=10.x",
-    "npm": ">=6.x",
-    "yarn": ">=1.21.3"
+    "node": ">=16.x",
+    "npm": ">=8.x",
+    "yarn": ">=3.x"
   },
   "resolutions": {
     "node-abi": "^3.28.0"
