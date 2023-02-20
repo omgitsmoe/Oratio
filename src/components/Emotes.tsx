@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import {
   makeStyles,
@@ -15,6 +15,7 @@ import * as Theme from './Theme';
 import { Emote } from './Emote';
 import { lsEmoteMap, lsTwitchAuth, lsTwitchChannel } from '../constants';
 import { dialog } from 'electron';
+import AlertDialog from './AlertDialog';
 
 export const emoteNameToUrl: { [key: string]: string } = {};
 export const lowercaseToEmoteName: { [key: string]: string } = {};
@@ -190,17 +191,31 @@ export default function Emotes() {
     window.electronAPI.startEmoteDownload(channelName, channel, global);
   }
 
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState('Confirm?');
+  const confirmedCallback = useRef<(() => void) | null>(null);
+  const handleDialogClose = () => setDialogOpen(false);
+  const handleDialogChoice = (choice: 1 | 2) => {
+    if (choice == 2) {
+      if (confirmedCallback.current !== null) confirmedCallback.current();
+    }
+    handleDialogClose();
+  };
+
   const onEmoteRemoved = async (name: string) => {
-    // TODO make this prettier
-    const answer = confirm(`Delete emote ${name}?`);
-    if (answer) {
+    // NOTE: can't use confirm/alert dialogs in electron since it messes up the
+    // window focus on windows
+    // (see https://github.com/electron/electron/issues/19977)
+    setDialogMessage(`Delete emote ${name}?`);
+    confirmedCallback.current = () => {
       delete emoteNameToUrl[name];
       delete lowercaseToEmoteName[name.toLowerCase()];
       localStorage.setItem(lsEmoteMap, JSON.stringify(emoteNameToUrl));
       window.electronAPI.exportEmoteMap(emoteNameToUrl);
       // not efficient since all emotes get re-rendered TODO
       forceUpdate();
-    }
+    };
+    setDialogOpen(true);
   };
 
   useEffect(() => {
@@ -250,6 +265,15 @@ export default function Emotes() {
 
   const element = (
     <MuiThemeProvider theme={theme}>
+      <AlertDialog
+        open={dialogOpen}
+        title={'Confirm deletion?'}
+        message={dialogMessage}
+        opt1={'No'}
+        opt2={'Yes'}
+        onChoice={handleDialogChoice}
+        onClose={handleDialogClose}
+      />
       <div className={classes.root}>
         <div className={classes.content}>
           <h2>Emote Tools</h2>
@@ -280,9 +304,8 @@ export default function Emotes() {
             className={classes.button}
             style={{ backgroundColor: red[300] }}
             onClick={async () => {
-              // TODO make this prettier
-              const answer = confirm(`Clear all emotes (not recoverable!)?`);
-              if (answer) {
+              setDialogMessage(`Clear all emotes (not recoverable!)?`);
+              confirmedCallback.current = () => {
                 clearObject(emoteNameToUrl);
                 clearObject(lowercaseToEmoteName);
                 localStorage.setItem(
@@ -291,7 +314,8 @@ export default function Emotes() {
                 );
                 window.electronAPI.exportEmoteMap(emoteNameToUrl);
                 forceUpdate();
-              }
+              };
+              setDialogOpen(true);
             }}
           >
             {t('Clear emotes')}
