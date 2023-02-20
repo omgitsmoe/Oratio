@@ -465,7 +465,8 @@ ipcMain.on('sendSpeechOBSWindow', (_event, phrase: string) => {
 ipcMain.on(
   'openFileExplorer',
   async (_event: IpcMainEvent, openPath: string) => {
-    openExplorer(openPath);
+    // make sure it's an absolute path
+    openExplorer(path.resolve(openPath));
   }
 );
 
