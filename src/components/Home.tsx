@@ -512,7 +512,7 @@ export default function Home() {
       if (pos === null) return;
       // NOTE: setting the input field's value sets the internal cursor (selectionStart)
       // to the end of the text
-      input.value = insertAt(inputRef.current!.value, pos, '|');
+      input.value = insertAt(input.value, pos, '|');
       // -> ajdust internal cursor
       input.setSelectionRange(pos + 1, pos + 1);
       caretPos.current = pos;
@@ -545,29 +545,39 @@ export default function Home() {
 
     window.electronAPI.onStartGlobalInputCapture(() => {
       if (inputRef.current) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const input = inputRef.current!;
         // to make sure input events get sent to the textfield when capturing
         // input globally
-        inputRef.current.focus();
+        input.focus();
         // so user can start typing a new message
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        inputRef.current!.select();
+        input.select();
         // to actually show the cursor
         setTextFocused(true);
 
         // removes the current caret if present
         // can't use beforeinput since it doesn't fire on arrow keys etc.
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        inputRef.current!.addEventListener('keydown', onInputChanged);
+        input.addEventListener('keydown', onInputChanged);
         // events bubble up, so window/document would be the last to receive it
         // -> input has already processed event
         // (we know there will be a keyup for every key since we __always__ send
         // the events in the order up, char, down)
         window.addEventListener('keyup', afterInputChanged);
+
+        // use normal input when user clicks the input
+        input.addEventListener(
+          'click',
+          window.electronAPI.stopGlobalInputCapture
+        );
       }
     });
     window.electronAPI.onStopGlobalInputCapture(() => {
       inputRef.current?.removeEventListener('keydown', onInputChanged);
       window.removeEventListener('keyup', afterInputChanged);
+      inputRef.current?.removeEventListener(
+        'click',
+        window.electronAPI.stopGlobalInputCapture
+      );
       if (inputRef.current) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const input = inputRef.current!;
@@ -606,7 +616,7 @@ export default function Home() {
                     onBlur: () => setTextFocused(false),
                   }}
                   onFocus={() => setTextFocused(true)}
-                  // e.g. fired when user click outside of element
+                  // e.g. fired when user clicks outside of element
                   onBlur={() => setTextFocused(false)}
                   autoFocus
                 />

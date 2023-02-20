@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('onStartGlobalInputCapture', callback),
   onStopGlobalInputCapture: (callback: () => void) =>
     ipcRenderer.on('onStopGlobalInputCapture', callback),
+  stopGlobalInputCapture: () => ipcRenderer.invoke('stopGlobalInputCapture'),
 });
 
 // NOTE: since we load the OBS window over react-dom-router as part of the
@@ -152,6 +153,7 @@ declare global {
 
       onStartGlobalInputCapture: (callback: () => void) => void;
       onStopGlobalInputCapture: (callback: () => void) => void;
+      stopGlobalInputCapture: () => void;
     };
 
     mainToOBS: {

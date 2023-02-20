@@ -500,3 +500,9 @@ ipcMain.handle(
 ipcMain.on('copyToClipboard', (_event: IpcMainEvent, value: string) => {
   clipboard.writeText(value);
 });
+
+ipcMain.handle('stopGlobalInputCapture', async () => {
+  if (ioIsHooked) {
+    toggleIOHook();
+  }
+});
