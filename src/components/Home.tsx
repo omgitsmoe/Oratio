@@ -551,7 +551,8 @@ export default function Home() {
         // input globally
         input.focus();
         // so user can start typing a new message
-        input.select();
+        // TODO fix selection with faked caret: input.select();
+        input.value = '';
         // to actually show the cursor
         setTextFocused(true);
 
