@@ -6201,16 +6201,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron@npm:^21.1.1":
-  version: 21.1.1
-  resolution: "electron@npm:21.1.1"
+"electron@npm:21":
+  version: 21.4.2
+  resolution: "electron@npm:21.4.2"
   dependencies:
     "@electron/get": ^1.14.1
     "@types/node": ^16.11.26
     extract-zip: ^2.0.1
   bin:
     electron: cli.js
-  checksum: 5bd00fe7d89f1ade2fbea7399ef34ec8d43a3f44b656bfe3813b660451ee0c0694caa9e31c8b6031065375b1956fd8b700e2be49228440f1005a04e9a5f84758
+  checksum: d073781ecfbb07f0850e7d3c9e7640a369e87e9cfbb01ec2e1b87bbc37e0210a2114491c081963533395cd8a9a5737cad124c2e1759122a363a4c494fc472433
   languageName: node
   linkType: hard
 
@@ -12631,7 +12631,7 @@ __metadata:
     css-minimizer-webpack-plugin: 4.2.2
     detect-port: ^1.5.1
     ejs: ^3.1.8
-    electron: ^21.1.1
+    electron: 21
     electron-builder: ^23.6.0
     electron-debug: ^3.1.0
     electron-devtools-installer: ^3.1.1
