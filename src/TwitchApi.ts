@@ -321,9 +321,14 @@ ${themeMode}/${emote.scale[emote.scale.length - 1]}`;
 
   static convertFFZEmote(emote: FFZEmote): Emote {
     // prioritize by size
-    const url = emote.urls['4'] || emote.urls['2'] || emote.urls['1'];
+    let url = emote.urls['4'] || emote.urls['2'] || emote.urls['1'];
     // url is missing the protocol part
-    return { id: emote.id.toString(), name: emote.name, url: `https:${url}` };
+    // NOTE: FFZ suddenly started including the protocol in the emote url
+    if (!url.startsWith('http')) {
+      url = `https:${url}`;
+    }
+
+    return { id: emote.id.toString(), name: emote.name, url };
   }
 
   static convert7TVEmote(emote: SevenTVEmote): Emote {

@@ -243,25 +243,30 @@ export async function downloadEmotes(
 
     await Promise.all(
       promises.map((p) =>
-        p.then((data) => {
-          const [emote, filePathWithExtension] = data;
-          numFinished += 1;
-          progressUpdate(emote.name);
+        p.then(
+          (data) => {
+            const [emote, filePathWithExtension] = data;
+            numFinished += 1;
+            progressUpdate(emote.name);
 
-          // add to emote map
-          // html paths are relative to resources/app.asar that's why we
-          // need '../'
-          // node/electron paths though are relative to the exe which is
-          // where 'resources' lives as well
-          // so filePathWithExtension currently is the electron path and
-          // now we need to remove 'resources' from the url (not in a dev env though)
-          // and add '../'
-          emoteNameToUrl[emote.name] = `../${encodeURI(
-            filePathWithExtension.replace(/^resources\//, '')
-          )}`;
-          // lowercaseToEmoteName[emote.name.toLowerCase()] = emote.name;
-          return null;
-        })
+            // add to emote map
+            // html paths are relative to resources/app.asar that's why we
+            // need '../'
+            // node/electron paths though are relative to the exe which is
+            // where 'resources' lives as well
+            // so filePathWithExtension currently is the electron path and
+            // now we need to remove 'resources' from the url (not in a dev env though)
+            // and add '../'
+            emoteNameToUrl[emote.name] = `../${encodeURI(
+              filePathWithExtension.replace(/^resources\//, '')
+            )}`;
+            // lowercaseToEmoteName[emote.name.toLowerCase()] = emote.name;
+            return null;
+          },
+          (reason) => {
+            progressUpdate(`Failed: ${reason}`);
+          }
+        )
       )
     );
 
