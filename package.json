@@ -55,6 +55,7 @@
       "target": [
         "AppImage"
       ],
+      "icon": "./assets/icon.png",
       "category": "Development"
     },
     "directories": {

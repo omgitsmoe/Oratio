@@ -65,19 +65,43 @@ export interface FFZEmoteSet {
   emoticons: FFZEmote[];
 }
 
+export interface SevenTVEmoteFileInfo {
+  name: string;
+  static_name: string;
+  width: number;
+  height: number;
+  frame_count: number;
+  size: number;
+  format: string;
+}
+
 export interface SevenTVEmote {
   id: string;
   name: string;
-  owner: unknown;
-  visibility: number;
-  visibility_simple: string[];
-  mime: string;
-  status: number;
+  flags: number;
   tags: string[];
-  width: number[];
-  height: number[];
-  // emote size number, emote url
-  urls: [string, string][];
+  lifecycle: number;
+  // LISTED, etc.
+  state: string[];
+  listed: boolean;
+  animated: boolean;
+  owner: unknown;
+  host: {
+    url: string;
+    files: SevenTVEmoteFileInfo[];
+  };
+  versions: unknown;
+}
+
+// returned when not querying for an emote direcly
+// e.g. when embedded in emote-sets/.. or in users/twitch/..
+export interface SevenTVEmoteWrapped {
+  id: string;
+  name: string;
+  flags: number;
+  timestamp: number;
+  actor_id: null | number;
+  data: SevenTVEmote;
 }
 
 export interface Emote {
@@ -107,24 +131,24 @@ export default class TwitchApi {
 
   readonly baseURIFFZ: string = 'https://api.frankerfacez.com/v1';
 
-  readonly baseURI7TV: string = 'https://api.7tv.app/v2';
+  readonly baseURI7TV: string = 'https://7tv.io/v3';
 
   readonly tokenType: string = 'Bearer';
 
   #authHeaders: { Authorization: string; 'Client-Id': string };
 
   constructor(
-    public clientId: string,
+    public twitchClientId: string,
     public authToken: string,
     // callback for when we get a 401: Unauthorized response
     public authFailedCallback: () => void
   ) {
-    this.clientId = clientId;
+    this.twitchClientId = twitchClientId;
     this.authToken = authToken;
     this.authFailedCallback = authFailedCallback;
     this.#authHeaders = {
       Authorization: `${this.tokenType} ${authToken}`,
-      'Client-Id': clientId,
+      'Client-Id': twitchClientId,
     };
   }
 
@@ -263,26 +287,36 @@ export default class TwitchApi {
     return [];
   }
 
+  unwrapEmotes(wrappedEmotes: SevenTVEmoteWrapped[]): SevenTVEmote[] {
+    return wrappedEmotes.map((wrapped) => wrapped.data);
+  }
+
   async getGlobalEmotes7TV(): Promise<SevenTVEmote[]> {
-    const url = `${this.baseURI7TV}/emotes/global`;
+    const globalEmoteSetId = '62cdd34e72a832540de95857';
+    const url = `${this.baseURI7TV}/emote-sets/${globalEmoteSetId}`;
     const resp = (await this.apiRequest(url, false)) as
-      | SevenTVEmote[]
+      | { emotes: SevenTVEmoteWrapped[] }
       | undefined;
-    if (resp) {
-      return resp;
+    if (resp && resp.emotes) {
+      return this.unwrapEmotes(resp.emotes);
     }
     return [];
   }
 
   async getChannelEmotes7TV(user_id: number): Promise<SevenTVEmote[]> {
-    const url = `${this.baseURI7TV}/users/${user_id}/emotes`;
-    const resp = (await this.apiRequest(url, false)) as
-      | SevenTVEmote[]
-      | unknown;
-    // will return 'status', 'message' and 'reason' on error
-    if (Array.isArray(resp)) {
-      return resp;
+    const urlUserByTwitchId = `${this.baseURI7TV}/users/twitch/${user_id}`;
+    const resp = (await this.apiRequest(urlUserByTwitchId, false)) as
+      // will return 'status', 'error' (and '*_code' for both of them) on error
+      { error?: string; emote_set?: { emotes: SevenTVEmoteWrapped[] } };
+
+    if (resp) {
+      if (resp.error) {
+        return [];
+      } else if (resp.emote_set) {
+        return this.unwrapEmotes(resp.emote_set.emotes);
+      }
     }
+
     return [];
   }
 
@@ -332,49 +366,93 @@ ${themeMode}/${emote.scale[emote.scale.length - 1]}`;
   }
 
   static convert7TVEmote(emote: SevenTVEmote): Emote {
-    // prioritize by size
-    // [size number, url]
-    const url = emote.urls[emote.urls.length - 1][1];
+    const baseUrl = `https:${emote.host.url}`;
+    // assuming the files are ordered asc by size, so choose last one
+    const maxSizeEmoteFileName =
+      emote.host.files[emote.host.files.length - 1].name;
+    const url = `${baseUrl}/${maxSizeEmoteFileName}`;
     return { id: emote.id, name: emote.name, url };
   }
 
-  async getGlobalEmotes(): Promise<EmoteGroupsGlobal> {
+  async getGlobalEmotes(): Promise<[EmoteGroupsGlobal, string[]]> {
     const allEmotes: EmoteGroupsGlobal = {
-      // get global emotes, convert them to our common emote
-      twitchGlobal: (await this.getGlobalEmotesTwitch()).map(
-        TwitchApi.convertTwitchEmote
-      ),
-      bttvGlobal: (await this.getGlobalEmotesBTTV()).map(
-        TwitchApi.convertBTTVEmote
-      ),
-      ffzGlobal: (await this.getGlobalEmotesFFZ()).map(
-        TwitchApi.convertFFZEmote
-      ),
-      sevenTVGlobal: (await this.getGlobalEmotes7TV()).map(
-        TwitchApi.convert7TVEmote
-      ),
+      twitchGlobal: [],
+      bttvGlobal: [],
+      ffzGlobal: [],
+      sevenTVGlobal: [],
     };
+    const errors: string[] = [];
+    // get global emotes, convert them to our common emote
+    try {
+      allEmotes.twitchGlobal = (await this.getGlobalEmotesTwitch()).map(
+        TwitchApi.convertTwitchEmote
+      );
+    } catch (e) {
+      errors.push(e.toString());
+    }
+    try {
+      allEmotes.bttvGlobal = (await this.getGlobalEmotesBTTV()).map(
+        TwitchApi.convertBTTVEmote
+      );
+    } catch (e) {
+      errors.push(e.toString());
+    }
+    try {
+      allEmotes.ffzGlobal = (await this.getGlobalEmotesFFZ()).map(
+        TwitchApi.convertFFZEmote
+      );
+    } catch (e) {
+      errors.push(e.toString());
+    }
+    try {
+      allEmotes.sevenTVGlobal = (await this.getGlobalEmotes7TV()).map(
+        TwitchApi.convert7TVEmote
+      );
+    } catch (e) {
+      errors.push(e.toString());
+    }
 
-    return allEmotes;
+    return [allEmotes, errors];
   }
 
-  async getChannelEmotes(user_id: number): Promise<EmoteGroupsChannel> {
+  async getChannelEmotes(user_id: number): Promise<[EmoteGroupsChannel, string[]]> {
     const allEmotes: EmoteGroupsChannel = {
-      twitchChannel: (await this.getChannelEmotesTwitch(user_id)).map(
-        TwitchApi.convertTwitchEmote
-      ),
-      bttvChannel: (await this.getChannelEmotesBTTV(user_id)).map(
-        TwitchApi.convertBTTVEmote
-      ),
-      ffzChannel: (await this.getChannelEmotesFFZ(user_id)).map(
-        TwitchApi.convertFFZEmote
-      ),
-      sevenTVChannel: (await this.getChannelEmotes7TV(user_id)).map(
-        TwitchApi.convert7TVEmote
-      ),
+      twitchChannel: [],
+      bttvChannel: [],
+      ffzChannel: [],
+      sevenTVChannel: [],
     };
+    const errors: string[] = [];
+    try {
+      allEmotes.twitchChannel = (
+        await this.getChannelEmotesTwitch(user_id)
+      ).map(TwitchApi.convertTwitchEmote);
+    } catch (e) {
+      errors.push(e.toString());
+    }
+    try {
+      allEmotes.bttvChannel = (await this.getChannelEmotesBTTV(user_id)).map(
+        TwitchApi.convertBTTVEmote
+      );
+    } catch (e) {
+      errors.push(e.toString());
+    }
+    try {
+      allEmotes.ffzChannel = (await this.getChannelEmotesFFZ(user_id)).map(
+        TwitchApi.convertFFZEmote
+      );
+    } catch (e) {
+      errors.push(e.toString());
+    }
+    try {
+      allEmotes.sevenTVChannel = (await this.getChannelEmotes7TV(user_id)).map(
+        TwitchApi.convert7TVEmote
+      );
+    } catch (e) {
+      errors.push(e.toString());
+    }
 
-    return allEmotes;
+    return [allEmotes, errors];
   }
 
   async getTwitchChannelEmotesConverted(

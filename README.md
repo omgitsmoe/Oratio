@@ -188,6 +188,23 @@ cd your-project-name
 yarn
 ```
 
+### Linux
+
+You also need the following packages:
+
+```bash
+sudo apt install \
+  libsecret-1-dev \
+  libx11-dev \
+  libxtst-dev \
+  libxt-dev \
+  libxinerama-dev \
+  libx11-xcb-dev \
+  libxkbcommon-dev \
+  libxkbcommon-x11-dev \
+  libxkbfile-dev
+```
+
 Start the app in the `dev` environment:
 
 ```bash

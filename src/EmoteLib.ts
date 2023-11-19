@@ -194,11 +194,19 @@ export async function downloadEmotes(
       // get EmoteGroups object and convert it to [groupName, emotes] using
       // Object.entries
       if (global === true) {
-        allEmotes.push(...Object.entries(await tw.getGlobalEmotes()));
+        const [emotes, errors] = await tw.getGlobalEmotes();
+        for (const e of errors) {
+          reportEmoteProgress(event.sender, 'error', e);
+        }
+        allEmotes.push(...Object.entries(emotes));
       } else {
         // will not be null see the if right after userId
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        allEmotes.push(...Object.entries(await tw.getChannelEmotes(userId!)));
+        const [emotes, errors] = await tw.getChannelEmotes(userId!);
+        for (const e of errors) {
+          reportEmoteProgress(event.sender, 'error', e);
+        }
+        allEmotes.push(...Object.entries(emotes));
       }
     } else {
       allEmotes.push(
