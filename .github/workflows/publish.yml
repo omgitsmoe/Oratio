@@ -44,7 +44,8 @@ jobs:
 
       - name: Get Electron cache directory
         id: electron-cache-dir
-        run: echo "path=$(node -e "console.log(require('path').join(require('os').homedir(), '.cache', 'electron'))")" >> $env:GITHUB_OUTPUT
+        shell: bash
+        run: echo "path=$LOCALAPPDATA/electron/Cache" >> $GITHUB_OUTPUT
 
       - uses: actions/cache@v4
         id: electron-cache

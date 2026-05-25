@@ -35,7 +35,15 @@ jobs:
 
       - name: Get Electron cache directory
         id: electron-cache-dir
-        run: echo "path=$(node -e "console.log(require('path').join(require('os').homedir(), '.cache', 'electron'))")" >> $GITHUB_OUTPUT
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            echo "path=$LOCALAPPDATA/electron/Cache" >> $GITHUB_OUTPUT
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            echo "path=$HOME/Library/Caches/electron" >> $GITHUB_OUTPUT
+          else
+            echo "path=$HOME/.cache/electron" >> $GITHUB_OUTPUT
+          fi
 
       - uses: actions/cache@v4
         id: electron-cache
