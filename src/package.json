@@ -15,7 +15,7 @@
   },
   "resolutions": {
     "node-abi": "^3.28.0",
-    "node-gyp": "^9.4",
+    "node-gyp": "^10.0",
     "uiohook-napi@^1.5.0": "patch:uiohook-napi@npm%3A1.5.0#./.yarn/patches/uiohook-napi-npm-1.5.0-3b358779be.patch"
   },
   "license": "MIT",
