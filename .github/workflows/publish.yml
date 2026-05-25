@@ -57,6 +57,22 @@ jobs:
         run: |
           yarn install
 
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          version=$(node -p "require('./src/package.json').version")
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "tag=v$version" >> $GITHUB_OUTPUT
+
+      - name: Pre-create draft release (safe to fail if exists)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --draft --title "${{ steps.version.outputs.version }}" --notes "" || true
+
       - name: Publish releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
