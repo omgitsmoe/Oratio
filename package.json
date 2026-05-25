@@ -270,7 +270,10 @@
   },
   "resolutions": {
     "node-abi": "^3.28.0",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "yargs@^17.3.1": "patch:yargs@npm%3A17.7.2#./.yarn/patches/yargs-npm-17.7.2-80b62638e1.patch",
+    "yargs@^17.5.1": "patch:yargs@npm%3A17.7.2#./.yarn/patches/yargs-npm-17.7.2-80b62638e1.patch",
+    "yargs@^17.0.1": "patch:yargs@npm%3A17.7.2#./.yarn/patches/yargs-npm-17.7.2-80b62638e1.patch"
   },
   "collective": {
     "url": "https://opencollective.com/electron-react-boilerplate-594"
