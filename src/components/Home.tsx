@@ -13,6 +13,7 @@ import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
+import FormHelperText from '@material-ui/core/FormHelperText';
 import { red, green } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
@@ -125,6 +126,7 @@ export default function Home() {
 
   // these can't change between renders
   const [ttsHasAuth, setTtsHasAuth] = React.useState(false);
+  const [ttsError, setTtsError] = React.useState('');
   // creating AzureTTS in here would re-create it on __every__ render
   const tts = useRef<AzureTTS | null>(null);
 
@@ -140,6 +142,7 @@ export default function Home() {
     }
 
     setTTSActive(value);
+    setTtsError('');
     localStorage.setItem(constants.lsTTSActive, value ? '1' : '0');
   }
 
@@ -356,6 +359,7 @@ export default function Home() {
         setTtsHasAuth(true);
         // TODO add capacity option in tts settings
         tts.current = new AzureTTS(ttsSettings);
+        tts.current.onError = (error: string) => setTtsError(error);
 
         const cacheCap = parseInt(
           localStorage.getItem(constants.lsCacheLimit) || '500',
@@ -622,52 +626,61 @@ export default function Home() {
                   autoFocus
                 />
               </Grid>
-              <Grid container item xs={12} justify-content="flex-start">
-                <Button
-                  id="send-text"
-                  variant="contained"
-                  color="primary"
-                  className={classes.button}
-                  type="submit"
-                  // disabled
-                >
-                  {t('Send')} <SendIcon className={classes.buttonIcon} />
-                </Button>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      style={
-                        ttsActive ? { color: green[500] } : { color: red[500] }
-                      }
-                      checked={ttsActive}
-                      disabled={!ttsHasAuth}
-                      onChange={handleTTSToggle}
-                    />
-                  }
-                  label={t('TTS active')}
-                  labelPlacement="start"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      style={
-                        textSoundMuted
-                          ? { color: green[500] }
-                          : { color: red[500] }
-                      }
-                      checked={textSoundMuted}
-                      onChange={(event) => {
-                        setTextSoundMuted(event.currentTarget.checked);
-                        localStorage.setItem(
-                          'textSoundMuted',
-                          event.currentTarget.checked ? '1' : '0'
-                        );
-                      }}
-                    />
-                  }
-                  label={t('Mute text sound')}
-                  labelPlacement="start"
-                />
+              <Grid container item xs={12} direction="column">
+                <Grid container item justify-content="flex-start">
+                  <Button
+                    id="send-text"
+                    variant="contained"
+                    color="primary"
+                    className={classes.button}
+                    type="submit"
+                    // disabled
+                  >
+                    {t('Send')} <SendIcon className={classes.buttonIcon} />
+                  </Button>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        style={
+                          ttsActive ? { color: green[500] } : { color: red[500] }
+                        }
+                        checked={ttsActive}
+                        disabled={!ttsHasAuth}
+                        onChange={handleTTSToggle}
+                      />
+                    }
+                    label={t('TTS active')}
+                    labelPlacement="start"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        style={
+                          textSoundMuted
+                            ? { color: green[500] }
+                            : { color: red[500] }
+                        }
+                        checked={textSoundMuted}
+                        onChange={(event) => {
+                          setTextSoundMuted(event.currentTarget.checked);
+                          localStorage.setItem(
+                            'textSoundMuted',
+                            event.currentTarget.checked ? '1' : '0'
+                          );
+                        }}
+                      />
+                    }
+                    label={t('Mute text sound')}
+                    labelPlacement="start"
+                  />
+                </Grid>
+                {ttsError && (
+                  <Grid item>
+                    <FormHelperText error style={{ marginLeft: '8px' }}>
+                      {ttsError}
+                    </FormHelperText>
+                  </Grid>
+                )}
               </Grid>
             </Grid>
             {ttsActive && (
@@ -679,10 +692,12 @@ export default function Home() {
                 voiceStyle={voiceStyle}
                 onStyleChange={(value: string) => {
                   setVoiceStyle(value);
+                  setTtsError('');
                   localStorage.setItem(constants.lsVoiceStyle, value);
                 }}
                 onPitchChange={(value: number) => {
                   setVoicePitch(value);
+                  setTtsError('');
                   localStorage.setItem(
                     constants.lsVoicePitch,
                     value.toString()
@@ -690,6 +705,7 @@ export default function Home() {
                 }}
                 onRateChange={(value: number) => {
                   setVoiceRate(value);
+                  setTtsError('');
                   localStorage.setItem(constants.lsVoiceRate, value.toString());
                 }}
               />

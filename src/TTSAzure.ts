@@ -4,6 +4,7 @@ import {
   AudioConfig,
   Connection,
   Recognizer,
+  ResultReason,
 } from 'microsoft-cognitiveservices-speech-sdk';
 import { Howl } from 'howler';
 import uEmojiParser from 'universal-emoji-parser';
@@ -153,6 +154,8 @@ const xmlEscape = (str: string) => {
   });
 };
 
+export type TTSErrorCallback = (error: string) => void;
+
 export type TTSSettings = {
   apiKey: string;
   region: string;
@@ -205,6 +208,8 @@ export class AzureTTS {
 
   isOpen: boolean;
 
+  onError: TTSErrorCallback | null = null;
+
   // need to take the time into account that azure needs to process the request
   static readonly PAUSE_BETWEEN_PHRASES_MS = 100;
 
@@ -236,7 +241,9 @@ export class AzureTTS {
 
   private createSynthesizer(): SpeechSynthesizer | null {
     if (!this.settings.apiKey || !this.settings.region) {
-      console.error('AzureTTS: missing api key or region');
+      const msg = 'AzureTTS: missing api key or region';
+      console.error(msg);
+      this.onError?.(msg);
       return null;
     }
 
@@ -404,6 +411,23 @@ export class AzureTTS {
       (result) => {
         if (result.errorDetails) {
           console.error(result.errorDetails);
+          if (
+            result.reason === ResultReason.Canceled &&
+            result.properties.getProperty('CancellationErrorCode') === 'AuthenticationFailure'
+          ) {
+            this.onError?.('Invalid Azure API key or region');
+          } else if (
+            result.reason === ResultReason.Canceled &&
+            result.properties.getProperty('CancellationErrorCode') === 'Forbidden'
+          ) {
+            this.onError?.('API key quota exceeded');
+          } else {
+            let errorDetails = result.errorDetails;
+            if (result.errorDetails.includes("1006")) {
+              errorDetails = `API key or region may be invalid, received: ${errorDetails}`
+            }
+            this.onError?.(errorDetails);
+          }
         }
 
         // returned ArrayBuffer might be of length 0, which will result in audioEnd event not being fired
@@ -424,6 +448,7 @@ export class AzureTTS {
       },
       (error) => {
         console.error(error);
+        this.onError?.(String(error));
       }
     );
   }
