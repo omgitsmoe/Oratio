@@ -22,6 +22,9 @@ jobs:
         with:
           node-version: 18
 
+      - name: Install setuptools (node-gyp compat for Python 3.12+)
+        run: python -m pip install setuptools
+
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "path=$(yarn config get cacheFolder)" >> $env:GITHUB_OUTPUT
