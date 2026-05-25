@@ -46,9 +46,7 @@ export default class AppUpdater {
     autoUpdater.checkForUpdatesAndNotify();
   }
 }
-// app.disableHardwareAcceleration();
-// app.commandLine.appendSwitch('disable-gpu-compositing');
-// app.commandLine.appendSwitch('disable-gpu');
+app.disableHardwareAcceleration();
 let mainWindow: BrowserWindow | null = null;
 let ioEventsInitialized = false;
 let ioIsHooked = false;
