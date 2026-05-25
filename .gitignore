@@ -53,6 +53,8 @@ src/.yarn/*
 release
 src/main.prod.js
 src/main.prod.js.map
+src/main.dev.js
+src/main.dev.js.map
 src/preloadMain.js
 src/renderer.prod.js
 src/renderer.prod.js.map

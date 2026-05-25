@@ -23,7 +23,9 @@ import {
   IpcMainInvokeEvent,
   clipboard,
 } from 'electron';
+import { installExtension, REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import { autoUpdater } from 'electron-updater';
+import debug from 'electron-debug';
 import log from 'electron-log';
 import keytar from 'keytar';
 import * as fs from 'fs';
@@ -83,20 +85,12 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 if (isDevEnv || process.env.DEBUG_PROD === 'true') {
-  require('electron-debug')();
+  debug();
 }
 
 const installExtensions = async () => {
-  const installer = require('electron-devtools-installer');
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS'];
-
-  return installer
-    .default(
-      extensions.map((name) => installer[name]),
-      forceDownload
-    )
-    .catch(console.log);
+  return installExtension(REACT_DEVELOPER_TOOLS, { forceDownload }).catch(console.log);
 };
 
 const createWindow = async () => {
@@ -165,9 +159,9 @@ const createWindow = async () => {
   menuBuilder.buildMenu();
 
   // Open urls in the user's browser
-  mainWindow.webContents.on('new-window', (event, url) => {
-    event.preventDefault();
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
+    return { action: 'deny' };
   });
 
   // Remove this if your app does not use auto updates

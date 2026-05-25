@@ -14,13 +14,11 @@
     "postinstall": "yarn electron-rebuild"
   },
   "resolutions": {
-    "node-abi": "^3.28.0",
-    "node-gyp": "^10.0",
     "uiohook-napi@^1.5.0": "patch:uiohook-napi@npm%3A1.5.0#./.yarn/patches/uiohook-napi-npm-1.5.0-3b358779be.patch"
   },
   "license": "MIT",
   "dependencies": {
-    "keytar": "7.6",
+    "keytar": "^7.9.0",
     "uiohook-napi": "^1.5.0"
   },
   "packageManager": "yarn@3.4.1"
