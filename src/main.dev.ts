@@ -23,7 +23,10 @@ import {
   IpcMainInvokeEvent,
   clipboard,
 } from 'electron';
-import { installExtension, REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
+import {
+  installExtension,
+  REACT_DEVELOPER_TOOLS,
+} from 'electron-devtools-installer';
 import { autoUpdater } from 'electron-updater';
 import debug from 'electron-debug';
 import log from 'electron-log';
@@ -90,7 +93,9 @@ if (isDevEnv || process.env.DEBUG_PROD === 'true') {
 
 const installExtensions = async () => {
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  return installExtension(REACT_DEVELOPER_TOOLS, { forceDownload }).catch(console.log);
+  return installExtension(REACT_DEVELOPER_TOOLS, { forceDownload }).catch(
+    console.log
+  );
 };
 
 const createWindow = async () => {

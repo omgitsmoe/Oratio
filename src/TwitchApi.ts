@@ -305,9 +305,11 @@ export default class TwitchApi {
 
   async getChannelEmotes7TV(user_id: number): Promise<SevenTVEmote[]> {
     const urlUserByTwitchId = `${this.baseURI7TV}/users/twitch/${user_id}`;
-    const resp = (await this.apiRequest(urlUserByTwitchId, false)) as
+    const resp = (await this.apiRequest(urlUserByTwitchId, false)) as {
       // will return 'status', 'error' (and '*_code' for both of them) on error
-      { error?: string; emote_set?: { emotes: SevenTVEmoteWrapped[] } };
+      error?: string;
+      emote_set?: { emotes: SevenTVEmoteWrapped[] };
+    };
 
     if (resp) {
       if (resp.error) {
@@ -388,34 +390,36 @@ ${themeMode}/${emote.scale[emote.scale.length - 1]}`;
         TwitchApi.convertTwitchEmote
       );
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
     try {
       allEmotes.bttvGlobal = (await this.getGlobalEmotesBTTV()).map(
         TwitchApi.convertBTTVEmote
       );
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
     try {
       allEmotes.ffzGlobal = (await this.getGlobalEmotesFFZ()).map(
         TwitchApi.convertFFZEmote
       );
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
     try {
       allEmotes.sevenTVGlobal = (await this.getGlobalEmotes7TV()).map(
         TwitchApi.convert7TVEmote
       );
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
 
     return [allEmotes, errors];
   }
 
-  async getChannelEmotes(user_id: number): Promise<[EmoteGroupsChannel, string[]]> {
+  async getChannelEmotes(
+    user_id: number
+  ): Promise<[EmoteGroupsChannel, string[]]> {
     const allEmotes: EmoteGroupsChannel = {
       twitchChannel: [],
       bttvChannel: [],
@@ -428,28 +432,28 @@ ${themeMode}/${emote.scale[emote.scale.length - 1]}`;
         await this.getChannelEmotesTwitch(user_id)
       ).map(TwitchApi.convertTwitchEmote);
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
     try {
       allEmotes.bttvChannel = (await this.getChannelEmotesBTTV(user_id)).map(
         TwitchApi.convertBTTVEmote
       );
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
     try {
       allEmotes.ffzChannel = (await this.getChannelEmotesFFZ(user_id)).map(
         TwitchApi.convertFFZEmote
       );
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
     try {
       allEmotes.sevenTVChannel = (await this.getChannelEmotes7TV(user_id)).map(
         TwitchApi.convert7TVEmote
       );
     } catch (e) {
-      errors.push(e.toString());
+      errors.push(String(e));
     }
 
     return [allEmotes, errors];

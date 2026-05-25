@@ -49,7 +49,7 @@ export default {
   },
 
   resolve: {
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
     modules: [path.join(webpackPaths.srcPath), 'node_modules'],
   },
 

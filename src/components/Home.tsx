@@ -329,7 +329,16 @@ export default function Home() {
 
     // update chat interaction handler, otherwise it will use an outdated version
     chat.setOnChatEvent(sendSpeech.current);
-  }, [ttsActive, voiceStyle, voicePitch, voiceRate, textSoundMuted, socket]);
+  }, [
+    ttsActive,
+    voiceStyle,
+    voicePitch,
+    voiceRate,
+    voiceLang,
+    voiceName,
+    textSoundMuted,
+    socket,
+  ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSpeechSendClicked = async (event: any) => {
@@ -399,7 +408,8 @@ export default function Home() {
         pubnub.current.stop();
       }
     };
-    // ttsActive not included in deps array since we have a sep function for handling that
+    // ttsActive not included in deps array since we have a separate function for handling that
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Tab-complete
@@ -642,7 +652,9 @@ export default function Home() {
                     control={
                       <Checkbox
                         style={
-                          ttsActive ? { color: green[500] } : { color: red[500] }
+                          ttsActive
+                            ? { color: green[500] }
+                            : { color: red[500] }
                         }
                         checked={ttsActive}
                         disabled={!ttsHasAuth}

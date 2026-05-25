@@ -530,6 +530,7 @@ export default function App(props: { collab: boolean }) {
       socket.disconnect();
     };
     // collab can't change after receiving it, so it doesn't need to be in the deps array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const classes = useStyles({ bubbleColor: state.settings.bubbleColor });

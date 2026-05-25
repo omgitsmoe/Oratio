@@ -32,7 +32,7 @@ export default function AudioSelector(props: {
       setSoundOptions(await window.electronAPI.getDirListingSounds());
       setSound(localStorage.getItem(localStorageName) || '');
     })();
-  }, []);
+  }, [localStorageName]);
 
   const handleSoundChange = (event: React.ChangeEvent<{ value: unknown }>) => {
     setSound(event.target.value as string);

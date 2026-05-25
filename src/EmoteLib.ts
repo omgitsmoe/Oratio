@@ -2,7 +2,7 @@ import { IpcMainEvent } from 'electron';
 import * as https from 'https';
 import * as fs from 'fs';
 import TwitchApi, { Emote as EmoteCommon } from './TwitchApi';
-import { getTwitchToken, setTwitchAuth } from './main.dev.ts';
+import { getTwitchToken, setTwitchAuth } from './main.dev';
 
 const assetLoc =
   process.env.NODE_ENV === 'development'

@@ -413,18 +413,20 @@ export class AzureTTS {
           console.error(result.errorDetails);
           if (
             result.reason === ResultReason.Canceled &&
-            result.properties.getProperty('CancellationErrorCode') === 'AuthenticationFailure'
+            result.properties.getProperty('CancellationErrorCode') ===
+              'AuthenticationFailure'
           ) {
             this.onError?.('Invalid Azure API key or region');
           } else if (
             result.reason === ResultReason.Canceled &&
-            result.properties.getProperty('CancellationErrorCode') === 'Forbidden'
+            result.properties.getProperty('CancellationErrorCode') ===
+              'Forbidden'
           ) {
             this.onError?.('API key quota exceeded');
           } else {
             let errorDetails = result.errorDetails;
-            if (result.errorDetails.includes("1006")) {
-              errorDetails = `API key or region may be invalid, received: ${errorDetails}`
+            if (result.errorDetails.includes('1006')) {
+              errorDetails = `API key or region may be invalid, received: ${errorDetails}`;
             }
             this.onError?.(errorDetails);
           }

@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import * as Theme from './Theme';
 import { Emote } from './Emote';
 import { lsEmoteMap, lsTwitchAuth, lsTwitchChannel } from '../constants';
-import { dialog } from 'electron';
 import AlertDialog from './AlertDialog';
 
 export const emoteNameToUrl: { [key: string]: string } = {};
@@ -261,7 +260,7 @@ export default function Emotes() {
         }
       }
     );
-  }, []);
+  }, [forceUpdate]);
 
   const element = (
     <MuiThemeProvider theme={theme}>

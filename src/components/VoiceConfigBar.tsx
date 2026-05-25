@@ -58,6 +58,7 @@ export default function VoiceConfigBar(props: {
     localStorage.getItem(storageCurrentConfigName) || ''
   );
 
+  const { configLoadCallback } = props;
   // NOTE: we need to useEffect with voiceConfigs as dependency otherwise we will
   // get outdated values for voiceConfigs since the state of the closure
   // and the actual state will differ (could useRef for voiceConfigs otherwise)
@@ -67,7 +68,7 @@ export default function VoiceConfigBar(props: {
     function handleConfigLoad(name: string) {
       const newConfig = voiceConfigs[name];
       if (newConfig) {
-        props.configLoadCallback(name, newConfig);
+        configLoadCallback(name, newConfig);
         // set config name in save config menu, otherwise it might be confusing
         setSaveConfigName(name);
       } else {
@@ -78,7 +79,7 @@ export default function VoiceConfigBar(props: {
     }
 
     handleConfigLoadRef.current = handleConfigLoad;
-  }, [voiceConfigs]);
+  }, [voiceConfigs, configLoadCallback]);
 
   useEffect(() => {
     const configs = localStorage.getItem(storageConfigsName);
@@ -120,6 +121,7 @@ export default function VoiceConfigBar(props: {
         hotkeys.unbind(keys);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
