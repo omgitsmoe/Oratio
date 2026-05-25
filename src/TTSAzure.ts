@@ -226,7 +226,14 @@ export class AzureTTS {
   private preConnect() {
     if (this.#synthesizer !== null) {
       const connection = Connection.fromSynthesizer(this.#synthesizer);
-      connection.openConnection();
+      connection.openConnection(
+        () => {},
+        (error) => {
+          if (error.includes('1006')) {
+            this.onError?.('Invalid Azure API key or region');
+          }
+        }
+      );
       this.isOpen = true;
     }
   }
@@ -450,7 +457,15 @@ export class AzureTTS {
       },
       (error) => {
         console.error(error);
-        this.onError?.(String(error));
+        const errorStr = String(error);
+        if (
+          errorStr.includes('Authentication failed') ||
+          errorStr.includes('no valid credentials')
+        ) {
+          this.onError?.('Invalid Azure API key or region');
+        } else {
+          this.onError?.(errorStr);
+        }
       }
     );
   }
