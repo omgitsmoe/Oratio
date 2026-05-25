@@ -262,12 +262,15 @@
     "universal-emoji-parser": "^1.0.6"
   },
   "devEngines": {
-    "node": ">=18.x",
-    "npm": ">=8.x",
-    "yarn": ">=3.x"
+    "runtime": {
+      "name": "node",
+      "version": ">=18.x",
+      "onFail": "error"
+    }
   },
   "resolutions": {
-    "node-abi": "^3.28.0"
+    "node-abi": "^3.28.0",
+    "yargs": "^17.7.2"
   },
   "collective": {
     "url": "https://opencollective.com/electron-react-boilerplate-594"
