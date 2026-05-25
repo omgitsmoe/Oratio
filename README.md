@@ -53,6 +53,9 @@ which should only include the ability to read chat messages and send chat messag
 your request.
 Once successful the boxes below can be checked to mirror messages from or to chat.
 
+> **Note:** After changing chat mirroring settings the OBS browser source might need to
+> be refreshed (or Oratio restarted) for the changes to take effect.
+
 ### Emote support
 
 Oratio supports displaying Twitch/BTTV/FFZ/7TV emotes as well as emojis (e.g. `:smile:`).
@@ -68,6 +71,9 @@ Additionally you can type any valid channel name below that and download their c
 ![manage emotes](https://user-images.githubusercontent.com/60219950/197672122-85f4e513-90bd-4f1d-bb17-37a885008360.png)
 
 When typing in the text field you can use the `Tab` key to autocomplete emote names.
+
+> **Note:** After adding or refreshing emotes, the OBS browser source might need to
+> be refreshed (or Oratio restarted) for the new emotes to appear in the on-screen display.
 
 ### Text-to-Speech support
 
