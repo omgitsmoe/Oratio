@@ -12,15 +12,19 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
+        node-version: [22]
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Node.js, NPM and Yarn
-        uses: actions/setup-node@v3.6.0
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: ${{ matrix.node-version }}
+
+      - name: Enable corepack
+        run: corepack enable
 
       - name: Install setuptools (node-gyp compat for Python 3.12+)
         run: python -m pip install setuptools
@@ -29,14 +33,24 @@ jobs:
         id: yarn-cache-dir-path
         run: echo "path=$(yarn config get cacheFolder)" >> $env:GITHUB_OUTPUT
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.path }}
-          key: yarn-cache-folder-os-${{ runner.os }}-node-${{ env.node-version }}-${{ hashFiles('**/yarn.lock') }}
+          key: yarn-cache-folder-os-${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            yarn-cache-folder-os-${{ runner.os }}-node-${{ env.node-version }}-
+            yarn-cache-folder-os-${{ runner.os }}-node-${{ matrix.node-version }}-
             yarn-cache-folder-os-${{ runner.os }}-
+
+      - name: Get Electron cache directory
+        id: electron-cache-dir
+        run: echo "path=$(node -e "console.log(require('path').join(require('os').homedir(), '.cache', 'electron'))")" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        id: electron-cache
+        with:
+          path: ${{ steps.electron-cache-dir.outputs.path }}
+          key: electron-v42-${{ runner.os }}-${{ hashFiles('package.json') }}
 
       - name: Install dependencies
         run: |
@@ -44,12 +58,6 @@ jobs:
 
       - name: Publish releases
         env:
-          # These values are used for auto updates signing
-          # APPLE_ID: ${{ secrets.APPLE_ID }}
-          # APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
-          # CSC_LINK: ${{ secrets.CSC_LINK }}
-          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          # This is used for uploading release assets to github
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: electron-builder
           PN_PUB: ${{ secrets.pnPub }}
