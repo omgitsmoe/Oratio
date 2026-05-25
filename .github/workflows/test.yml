@@ -19,7 +19,14 @@ jobs:
         with:
           node-version: 18
 
+      - name: Install system deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev libx11-dev libxtst-dev libxt-dev libxinerama-dev libx11-xcb-dev libxkbcommon-dev libxkbcommon-x11-dev libxkbfile-dev
+
       - name: Install setuptools (node-gyp compat for Python 3.12+)
+        if: runner.os == 'Windows'
         run: python -m pip install setuptools
 
       - name: yarn install
